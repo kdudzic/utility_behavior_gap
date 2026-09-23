@@ -1,0 +1,5 @@
+stance,n,percent_of_stance_takers,high,low,flag_mismatch_rows
+believes,185,13.009845288326302,101,84,0
+disbelieves,96,6.751054852320675,36,60,2
+suspicious,675,47.46835443037975,285,390,4
+dismisses,931,65.47116736990155,447,484,3

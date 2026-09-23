@@ -1,7 +1,8 @@
 # Canonical Artifact Index
 
-This document records the current intended structure for the paper analyses.
-It is an index, not an analysis script.
+Historical index retained for provenance. The current public artifact map is
+[paper_reproduction/ARTIFACTS.md](../paper_reproduction/ARTIFACTS.md).
+The earlier selections and paths below are not the current paper entry point.
 
 ## Canonical Output Entry Point
 

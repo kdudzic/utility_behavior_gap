@@ -61,7 +61,14 @@ def load_cells(path: Path) -> pd.DataFrame:
     return df
 
 
-def plot(df: pd.DataFrame, out: Path, *, title: str) -> None:
+def plot(
+    df: pd.DataFrame,
+    out: Path,
+    *,
+    title: str,
+    title_fontsize: float = 22,
+    n_note_override: str | None = None,
+) -> None:
     plt.rcParams.update({"font.family": "DejaVu Sans", "figure.dpi": 200})
     fig, ax = plt.subplots(figsize=(10.8, 6.2), facecolor="white")
 
@@ -112,14 +119,31 @@ def plot(df: pd.DataFrame, out: Path, *, title: str) -> None:
 
     n_min = int(df["pairs"].min())
     n_max = int(df["pairs"].max())
-    n_note = f"n = {n_min} pairs / actor" if n_min == n_max else f"n = {n_min}-{n_max} pairs / actor"
+    n_note = (
+        n_note_override
+        if n_note_override is not None
+        else (
+            f"n = {n_min} pairs / actor"
+            if n_min == n_max
+            else f"n = {n_min}-{n_max} pairs / actor"
+        )
+    )
 
-    fig.text(0.5, 0.94, title, ha="center", va="top", fontsize=22, fontweight="bold", color="#1F2329")
+    fig.text(
+        0.5,
+        0.94,
+        title,
+        ha="center",
+        va="top",
+        fontsize=title_fontsize,
+        fontweight="bold",
+        color="#1F2329",
+    )
     fig.text(0.18, 0.875, f"{n_note}; FWER 95% CIs", ha="left", va="top", fontsize=14, color="#6B7280")
     fig.text(
         0.92,
         0.875,
-        f"{ci_positive} / {len(df)} CI-positive",
+        f"{ci_positive} / {len(df)} adj-CI > 0.5",
         ha="right",
         va="top",
         fontsize=12,

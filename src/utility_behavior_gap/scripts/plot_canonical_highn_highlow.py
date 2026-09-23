@@ -20,6 +20,7 @@ ANALYSIS = ROOT / "outputs" / "analysis"
 FIGURES = ANALYSIS / "figures"
 PAIR_PATH = ANALYSIS / "canonical_highn_condition_results_pair_outcomes.csv"
 OUT_PREFIX = "canonical_highn_highlow"
+PNG_DPI = 360
 
 TASK_ORDER = ["essay", "grant_proposal_abstract", "incident_postmortem", "translation"]
 DOMAIN_ORDER = ["animals", "countries", "political", "religions"]
@@ -191,7 +192,7 @@ def strip_spines(ax) -> None:
     ax.spines["bottom"].set_linewidth(0.7)
 
 
-def render_panel(ax, df_task: pd.DataFrame, task_label: str, panel_letter: str, *, show_xlabel: bool) -> None:
+def render_panel(ax, df_task: pd.DataFrame, task_label: str, panel_letter: str, *, show_xlabel: bool, x_label: str = "High-utility-side win rate (ties excluded)") -> None:
     actor_labels = [ACTOR_LABEL[actor] for actor in ACTORS]
     df_task = df_task.set_index("actor_label").reindex(actor_labels).reset_index()
     n = len(actor_labels)
@@ -254,7 +255,7 @@ def render_panel(ax, df_task: pd.DataFrame, task_label: str, panel_letter: str, 
     ax.grid(axis="x", color=GRID, lw=0.6, zorder=0)
     ax.set_axisbelow(True)
     strip_spines(ax)
-    ax.set_xlabel("High-utility-side win rate (ties excluded)" if show_xlabel else "", color=INK, labelpad=4, fontsize=11)
+    ax.set_xlabel(x_label if show_xlabel else "", color=INK, labelpad=4, fontsize=11)
     ax.text(-0.005, 1.20, task_label, transform=ax.transAxes, ha="left", va="top", fontsize=13, color=INK, fontweight="bold")
     n_pos = int(df_task["familywise_ci_positive"].sum())
     n_neg = int(df_task["familywise_ci_negative"].sum())
@@ -283,7 +284,7 @@ def render_panel(ax, df_task: pd.DataFrame, task_label: str, panel_letter: str, 
     ax.text(-0.30, 1.18, panel_letter, transform=ax.transAxes, fontsize=13, fontweight="bold", color=INK, va="top", ha="left")
 
 
-def plot_lollipop(cells: pd.DataFrame, path_stem: Path, *, title: str, write_pdf: bool = False) -> None:
+def plot_lollipop(cells: pd.DataFrame, path_stem: Path, *, title: str, write_pdf: bool = False, x_label: str = "High-utility-side win rate (ties excluded)") -> None:
     plt.rcParams.update({
         "font.family": "DejaVu Sans",
         "figure.dpi": 200,
@@ -298,8 +299,8 @@ def plot_lollipop(cells: pd.DataFrame, path_stem: Path, *, title: str, write_pdf
     letters = ["A", "B", "C", "D"]
     for idx, task in enumerate(TASK_ORDER):
         ax = fig.add_subplot(gs[idx // 2, idx % 2])
-        render_panel(ax, cells[cells["task"].eq(task)].copy(), TASK_LABEL.get(task, task), letters[idx], show_xlabel=(idx // 2 == 1))
-    fig.savefig(path_stem.with_suffix(".png"), dpi=240, bbox_inches="tight", facecolor=PAPER_BG)
+        render_panel(ax, cells[cells["task"].eq(task)].copy(), TASK_LABEL.get(task, task), letters[idx], show_xlabel=(idx // 2 == 1), x_label=x_label)
+    fig.savefig(path_stem.with_suffix(".png"), dpi=PNG_DPI, bbox_inches="tight", facecolor=PAPER_BG)
     if write_pdf:
         fig.savefig(path_stem.with_suffix(".pdf"), bbox_inches="tight", facecolor=PAPER_BG)
     plt.close(fig)

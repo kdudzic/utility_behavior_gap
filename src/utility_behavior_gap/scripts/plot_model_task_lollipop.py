@@ -147,7 +147,7 @@ def valid_votes_for_pair(
     if output_a is None or output_b is None:
         return []
     expected_hashes = (output_text_fingerprint(output_a), output_text_fingerprint(output_b))
-    out = []
+    by_key: dict[tuple[str, bool], dict[str, Any]] = {}
     for vote in votes_by_pair.get(pair_uid, []):
         if vote.get("success") is False:
             continue
@@ -155,8 +155,11 @@ def valid_votes_for_pair(
             continue
         if (vote.get("source_output_a_hash"), vote.get("source_output_b_hash")) != expected_hashes:
             continue
-        out.append(vote)
-    return out
+        if vote.get("winner_condition") == "unresolved":
+            continue
+        key = (str(vote.get("judge_model") or ""), bool(vote.get("flipped")))
+        by_key[key] = vote
+    return list(by_key.values())
 
 
 def read_run(run_dir: Path, *, left_condition: str, right_condition: str) -> dict[str, Any]:
@@ -212,6 +215,10 @@ def read_run(run_dir: Path, *, left_condition: str, right_condition: str) -> dic
                 "actor_label": job.get("actor_label", ""),
                 "task": job.get("task", ""),
                 "task_label": job.get("task_label", ""),
+                "domain": job.get("domain", ""),
+                "anchor_family": job.get("anchor_family", ""),
+                "high_consequence": job.get("high_consequence", ""),
+                "low_consequence": job.get("low_consequence", ""),
                 "pair_uid": pair_uid,
                 "panel_winner_condition": panel,
                 "complete": complete,

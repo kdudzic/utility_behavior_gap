@@ -1,7 +1,10 @@
 # Canonical Artifact Index
 
-This document records the current intended structure for the paper analyses.
-It is an index, not an analysis script.
+Historical index retained for provenance. For the current paper selection and
+tested public reproduction paths, use
+[paper_reproduction/ARTIFACTS.md](../../paper_reproduction/ARTIFACTS.md).
+Descriptions below reflect earlier workflow stages, including amount analyses
+that are not primary conditions in the current paper.
 
 ## Canonical Output Entry Point
 
@@ -168,8 +171,8 @@ appendix candidates.
 - `CURRENT_PAPER/docs/appendix_findings_to_carry_forward.md`
 - `docs/appendix_effort_dose_test.md`
 - `CURRENT_PAPER/docs/appendix_effort_dose_test.md`
-- `CURRENT_PAPER/docs/appendix_reasoning_trace_incentive_mentions.md`
-- `CURRENT_PAPER/docs/appendix_reasoning_trace_incentive_mentions.md`
+- `CURRENT_PAPER/docs/appendix_reasoning_trace_analysis.md` (consolidated reasoning-trace analysis using all 4,200 outputs and all 4,159 readable traces; read first)
+- `CURRENT_PAPER/docs/appendix_reasoning_trace_incentive_mentions.md` (pair-level mention-vs-performance tables, subsumed by the above)
 - `CURRENT_PAPER/docs/appendix_user_prompt_role_cue.md`
 - `CURRENT_PAPER/figures/user_prompt_role_model_task_lollipop.png`
 - `CURRENT_PAPER/results/user_prompt_role_aggregate.md`
@@ -185,9 +188,13 @@ appendix candidates.
 - `outputs/analysis/framed_user_mid_effort_essay_dose_summary.csv`
 - `outputs/analysis/framed_user_effort_dose_lollipop_data.csv`
 - `CURRENT_PAPER/figures/highlow_reasoning_traces_medium_essay_lollipop.png`
-- `outputs/analysis/highlow_reasoning_traces_medium__tasks-essay__7-actors_summary.md`
-- `outputs/analysis/reasoning_incentive_mentions__success_only_summary.md`
-- `outputs/analysis/reasoning_mentions_vs_performance__both_traces_required_summary.md`
+- `CURRENT_PAPER/results/reasoning_trace/` (curated summaries and audit tables)
+- `data/reasoning/reasoning_trace_raw_archive_provenance.json`
+- `data/reasoning/reasoning_trace_inputs.jsonl.gz` (portable 4,200-output trace input)
+- `data/reasoning/reasoning_trace_saved_stance_labels.jsonl.gz` (portable saved labels without duplicated trace text)
+- `analysis_specs/reasoning_trace_stance_classifier.md` (exact classifier prompt, lexical gate, model identifier, and batch protocol)
+- `CURRENT_PAPER/results/reasoning_trace/reasoning_suspicion_disbelief_exclusion.md` (sensitivity analysis excluding pairs with recorded suspicion or disbelief)
+- `CURRENT_PAPER/results/reasoning_trace/reasoning_suspicion_disbelief_exclusion.csv` (complete model-level estimates and adjusted tests)
 - `outputs/analysis/moral_r0_bridge__combined_7runs__summary.md`
 
 ## Archival Or Diagnostic Areas

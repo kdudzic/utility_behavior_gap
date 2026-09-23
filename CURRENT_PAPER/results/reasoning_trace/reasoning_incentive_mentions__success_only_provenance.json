@@ -1,0 +1,23 @@
+{
+  "analysis": "reasoning_incentive_mentions",
+  "sources": [
+    "outputs/analysis/reasoning_trace_inputs.jsonl.gz"
+  ],
+  "source_file_count": 1,
+  "outputs": 4200,
+  "expected_outputs": 4200,
+  "outputs_with_readable_trace": 4159,
+  "actors": [
+    "deepseek-v3.2-or",
+    "glm-5.1-or",
+    "gpt-5.4-mini-or",
+    "kimi-k2.5-or",
+    "mimo-v25-pro-or",
+    "qwen3.5-9b-or",
+    "qwen3.6-plus-or"
+  ],
+  "tasks": [
+    "essay"
+  ],
+  "output_id_sha256": "0b8ebd6f8c0c07f84940966184f7b7fd863247639fddfaba08c466101684364f"
+}

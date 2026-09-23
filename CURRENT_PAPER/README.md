@@ -1,73 +1,50 @@
 # Current Paper Artifacts
 
-This is the current human-facing artifact directory. It contains real copied
-files, not symlinks.
+Use [the artifact map](../paper_reproduction/ARTIFACTS.md) to distinguish current
+paper results from retained history. Nothing is selected by modification time.
 
-## Figures
+## Main Figures
 
-- `figures/direct_instruction_main.png`
-- `figures/highlow_model_task_lollipop.png`
-- `figures/high_utility_vs_framed_empty_model_task_lollipop.png`
-- `figures/high_utility_vs_r0_model_task_lollipop.png`
-- `figures/amount_model_task_lollipop.png`
-- `figures/moral_model_task_lollipop.png`
-- `figures/framed_user_prompt_role_model_task_lollipop.png`
-- `figures/highlow_gap_trend_actor_z.png`
-- `figures/high_utility_vs_neutral_trend_actor_z.png`
-- `figures/highlow_reasoning_traces_medium_essay_lollipop.png`
+- [Direct exhortation](figures/direct_instruction_main.png)
+- [High-low utility](figures/highlow_model_task_lollipop.png)
+- [Framed role cue](figures/framed_user_prompt_role_model_task_lollipop.png)
+- [Harmful vs framed empty](figures/moral_low_vs_framed_empty_model_task_lollipop.png)
+- [High utility vs framed empty](figures/high_utility_vs_framed_empty_model_task_lollipop.png)
+- [Utility magnitude trends](figures/utility_trend_two_panel_gap_and_absolute_framed_empty.png)
 
-High-low domain figures are also included:
+The family-wise intervals in these model/task figures are not the same estimand
+or correction as the overall/task bootstrap summaries. Use
+[the unified aggregate reference](../paper_reproduction/reference/aggregate_winrate_bootstrap_cis.csv)
+for those summaries; older aggregate Markdown files retain their historical methods.
 
-- `figures/highlow_domain_animals_model_task_lollipop.png`
-- `figures/highlow_domain_countries_model_task_lollipop.png`
-- `figures/highlow_domain_political_model_task_lollipop.png`
-- `figures/highlow_domain_religions_model_task_lollipop.png`
+## Feature Tables
 
-## Results
+- [Direct](features/direct_instruction_main_feature_table.tex)
+- [Utility, matching direct dimensions](features/highlow_main_feature_table.tex)
+- [Role](features/framed_user_prompt_role_feature_table.tex)
+- [Harmful vs framed empty](features/moral_low_vs_framed_empty_feature_table.tex)
+- [Feature directionality](features/feature_directionality_by_contrast_table.tex)
 
-- `results/direct_instruction_panel_summary.md`
-- `results/highn_condition_results_summary.md`
-- `results/highn_condition_results_model_task.csv`
-- `results/highn_condition_results_pair_outcomes.csv`
-- `results/highlow_summary.md`
-- `results/amount_summary.md`
-- `results/high_utility_vs_neutral_summary.md`
-- `results/high_utility_vs_framed_empty_summary.md`
-- `results/high_utility_vs_framed_empty_model_task_cells.csv`
-- `results/high_utility_vs_framed_empty_pair_outcomes.csv`
-- `results/high_utility_vs_r0_summary.md`
-- `results/high_utility_vs_r0_model_task_cells.csv`
-- `results/high_utility_vs_r0_pair_outcomes.csv`
-- `results/amount_high_vs_neutral_summary.md`
-- `results/moral_low_vs_neutral_summary.md`
-- `results/framed_user_prompt_role_aggregate.md`
-- `results/framed_user_prompt_role_model_task_summary.md`
-- `results/framed_user_prompt_role_model_task_plot_data.csv`
-- `results/framed_user_prompt_role_pair_outcomes.csv`
-- `results/framed_user_prompt_role_run_audit.csv`
+Each has a matching CSV/Markdown file. The offline runner refits the underlying
+models using the updated vocabulary inputs in `data/processed/`, not the older
+large `final_text_analysis_pair_deltas.csv` retained here.
 
-## Features
+## Reasoning Appendix
 
-- `features/final_text_analysis_summary.md`
-- `features/final_text_analysis_pair_deltas.csv`
-- `features/final_text_analysis_by_output.csv`
-- `features/direct_instruction_feature_deltas_summary.md`
-- `features/utility_feature_deltas_summary.md`
-- `features/direct_instruction_combined_feature_appendix_summary.md`
-- `features/utility_highlow_feature_appendix_summary.md`
-- `features/utility_highlow_feature_appendix_clear_differences.md`
-- `features/utility_highlow_feature_appendix_clear_differences.csv`
-- `features/utility_highlow_feature_appendix_clear_differences.tex`
-- `features/direct_instruction_rubric_coding/`
-- `features/moral_combined_feature_appendix_summary.md`
-- `features/moral_low_vs_framed_empty_combined_feature_appendix_summary.md`
-- `features/moral_low_vs_r0_combined_feature_appendix_summary.md`
-- `features/moral_rubric_coding/` (plus `moral_low_vs_framed_empty_rubric_coding/`, `moral_low_vs_r0_rubric_coding/`)
-- Moral feature/rubric appendices: clean rubric rerun completed 2026-06-17. Refusal/degenerate moral outputs are excluded at both sample construction and analysis via `outputs/analysis/canonical_highn_moral_refusal_classifications.jsonl` (seed 20260615).
+- [Report including the larger Qwen sample](docs/appendix_reasoning_trace_analysis.md)
+- [Suspicion-exclusion table](results/reasoning_trace/reasoning_suspicion_disbelief_exclusion.md)
+- [Original reasoning-on figure](figures/highlow_reasoning_traces_medium_essay_lollipop.png)
+- [Suspicion-filtered figure](figures/highlow_reasoning_suspicion_filtered_essay_lollipop.png)
+- [Classifier protocol](../analysis_specs/reasoning_trace_stance_classifier.md)
 
-## Documentation
+## Definitions and Reproduction
 
-- `docs/canonical_prompt_book.md`
-- `docs/canonical_artifact_index.md`
-- `docs/analysis_workflow.md`
-- `docs/feature_definitions.yaml`
+- [Approved actor prompt book](docs/canonical_prompt_book.md)
+- [Literal judge prompts](docs/judge_prompts.md)
+- [Editable feature definitions](../analysis_specs/feature_definitions.yaml)
+- [Offline reproduction guide](../paper_reproduction/README.md)
+
+Amount and early moral high-low artifacts, unframed role results, and older
+feature tables remain in this directory for provenance. Their presence does
+not make them current paper results. Existing PDFs are historical exports;
+the reproduction command writes PNG figures only.

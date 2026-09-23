@@ -16,6 +16,7 @@ ANALYSIS = ROOT / "outputs" / "analysis"
 FIGURES = ANALYSIS / "figures"
 CELL_PATH = ANALYSIS / "canonical_highn_condition_results_model_task.csv"
 OUT_PREFIX = "canonical_highn_moral"
+PNG_DPI = 360
 TASK_ORDER = ["essay", "grant_proposal_abstract", "incident_postmortem", "translation"]
 
 PAPER_BG = "#FFFFFF"
@@ -150,11 +151,9 @@ def main() -> None:
         render_panel(ax, cells[cells["task"].eq(task)].copy(), TASK_LABEL.get(task, task), "ABCD"[idx], show_xlabel=(idx // 2 == 1))
 
     path_stem = FIGURES / f"{OUT_PREFIX}_model_task_lollipop"
-    fig.savefig(path_stem.with_suffix(".png"), dpi=240)
-    fig.savefig(path_stem.with_suffix(".pdf"), facecolor=PAPER_BG)
+    fig.savefig(path_stem.with_suffix(".png"), dpi=PNG_DPI)
     plt.close(fig)
     print(path_stem.with_suffix(".png"))
-    print(path_stem.with_suffix(".pdf"))
 
 
 if __name__ == "__main__":

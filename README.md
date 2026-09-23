@@ -1,81 +1,54 @@
-# Utility-Behavior Gap
+# When Preferences Fail to Become Incentives
 
-Start with [START_HERE.md](START_HERE.md).
+Code, frozen analysis inputs, and paper artifacts for the Utility-Behavior Gap
+experiments. This is the public replication repository, not the private research backup.
 
-For the current paper line, the important human-facing artifacts are in:
+## Start Here
 
-`CURRENT_PAPER/`
+- **Figures and tables:** [CURRENT_PAPER](CURRENT_PAPER/README.md).
+- **Exact experimental prompts:** [canonical prompt book](CURRENT_PAPER/docs/canonical_prompt_book.md).
+- **Exact judging prompts:** [judge prompts](CURRENT_PAPER/docs/judge_prompts.md).
+- **Reproduce and verify results:** [paper reproduction guide](paper_reproduction/README.md).
+- **Current versus historical:** [artifact map](paper_reproduction/ARTIFACTS.md).
 
-That directory contains real copied files, not symlinks:
+The current paper uses high-low utility, direct user-prompt exhortation, framed
+role cues, and harmful-outcome comparisons with baselines. Amount experiments
+remain available as historical analyses; they are **not a primary condition of
+the current paper**. A filename containing `canonical` does not establish its status.
 
-- `CURRENT_PAPER/figures/`: current paper-facing figures.
-- `CURRENT_PAPER/results/`: current result summaries and model/task CSVs.
-- `CURRENT_PAPER/features/`: current feature-analysis outputs.
-- `CURRENT_PAPER/docs/`: current workflow/spec documentation.
+## Reproduce Locally
 
-The same current artifacts are also copied under `outputs/paper_ready/`.
+Python 3.13 was used for verification. From this directory:
 
-## Current Primary Figures
+```bash
+python3.13 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r paper_reproduction/requirements.txt
+python paper_reproduction/reproduce.py audit
+python paper_reproduction/reproduce.py run
+```
 
-- `CURRENT_PAPER/figures/direct_instruction_main.png`
-- `CURRENT_PAPER/figures/highlow_model_task_lollipop.png`
-- `CURRENT_PAPER/figures/amount_model_task_lollipop.png`
-- `CURRENT_PAPER/figures/moral_model_task_lollipop.png`
+These commands make **no model API calls**. They recompute statistics and figures
+from the included pair-level outcomes, feature measurements, rubric ratings,
+and saved reasoning labels, then compare them with the accepted results. Outputs
+go under `outputs/reproduced/`; `CURRENT_PAPER/` is never overwritten.
+See the guide for per-analysis commands and the distinction between reproducing
+an analysis and recollecting model responses.
 
-## Current Primary Results
+## Reasoning Appendix
 
-- `CURRENT_PAPER/results/direct_instruction_panel_summary.md`
-- `CURRENT_PAPER/results/highn_condition_results_summary.md`
-- `CURRENT_PAPER/results/highlow_summary.md`
-- `CURRENT_PAPER/results/amount_summary.md`
-- `CURRENT_PAPER/results/high_utility_vs_neutral_summary.md`
-- `CURRENT_PAPER/results/amount_high_vs_neutral_summary.md`
-- `CURRENT_PAPER/results/moral_low_vs_neutral_summary.md`
+The original reasoning-on essay experiment contains 4,200 outputs / 2,100 pairs.
+The updated suspicion-exclusion analysis adds 1,620 Qwen3.5 follow-up pairs.
+Reproduction uses preserved **local Opus labels**, not the rejected API-Opus
+labels. The recovered instructions are in
+[the stance specification](analysis_specs/reasoning_trace_stance_classifier.md).
+See [the appendix report](CURRENT_PAPER/docs/appendix_reasoning_trace_analysis.md)
+for results and scope caveats.
 
-## Current Documentation
+## Repository Boundaries
 
-- `CURRENT_PAPER/docs/canonical_prompt_book.md`
-- `docs/canonical_artifact_index.md`
-- `docs/analysis_workflow.md`
-- `analysis_specs/feature_definitions.yaml`
-- `src/utility_behavior_gap/scripts/README.md`
-
-## Important Code Entry Points
-
-Generation and judging:
-
-- `src/utility_behavior_gap/scripts/prepare_generation_jobs.py`
-- `src/utility_behavior_gap/scripts/run_generation.py`
-- `src/utility_behavior_gap/scripts/run_judging.py`
-- `src/utility_behavior_gap/scripts/status.py`
-
-Current run wrappers:
-
-- `src/utility_behavior_gap/scripts/run_framed_user_strong_actor.sh`
-- `src/utility_behavior_gap/scripts/run_fund_wording_actor.sh`
-- `src/utility_behavior_gap/scripts/run_canonical_amount_base_actor.sh`
-- `src/utility_behavior_gap/scripts/run_canonical_highn_actor.sh`
-
-Current analyses:
-
-- `src/utility_behavior_gap/scripts/export_canonical_prompt_book.py`
-- `src/utility_behavior_gap/scripts/analyze_framed_user_strong_panel.py`
-- `src/utility_behavior_gap/scripts/analyze_canonical_highn_conditions.py`
-- `src/utility_behavior_gap/scripts/analyze_canonical_utility_gap_trend.py`
-- `src/utility_behavior_gap/scripts/analyze_final_text_features.py`
-- `src/utility_behavior_gap/scripts/analyze_standard_feature_deltas.py`
-- `src/utility_behavior_gap/scripts/run_task_rubric_feature_coding.py`
-- `src/utility_behavior_gap/scripts/analyze_task_rubric_feature_coding.py`
-
-## Archive / Not Current
-
-Nothing was deleted. Old or misleading artifacts were moved or documented as
-archival.
-
-- `outputs/archive/stale_paper_ready__2026-06-16/`: old stale paper-ready copy.
-- `outputs/archive/symlink_paper_ready__2026-06-16/`: symlink-based paper-ready index, replaced with real copies.
-- `outputs/archive/legacy_figures/`: old non-current figures.
-- `outputs/analysis/`: mixed current intermediate outputs plus exploratory and historical analyses.
-
-Do not use old `modgrid_*`, `highlow_intervention_*`, or unindexed analysis
-artifacts as paper-ready without re-auditing them.
+`CURRENT_PAPER/` includes current and retained historical artifacts: use the
+explicit artifact map, not timestamps. `src/` retains collection and analysis
+tools; `paper_reproduction/` is the tested offline entry point. Large raw API
+caches, credentials, and exploratory follow-ups are not automatically published.
+No private checkout is needed for the documented offline analyses.

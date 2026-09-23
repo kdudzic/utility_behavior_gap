@@ -20,6 +20,7 @@ ANALYSIS = ROOT / "outputs" / "analysis"
 FIGURES = ANALYSIS / "figures"
 PAIR_PATH = ANALYSIS / "canonical_highn_condition_results_pair_outcomes.csv"
 OUT_PREFIX = "canonical_highn_amount"
+PNG_DPI = 360
 
 TASK_ORDER = ["essay", "grant_proposal_abstract", "incident_postmortem", "translation"]
 
@@ -223,7 +224,7 @@ def render_panel(ax, df_task: pd.DataFrame, task_label: str, panel_letter: str, 
     ax.text(-0.30, 1.18, panel_letter, transform=ax.transAxes, fontsize=13, fontweight="bold", color=INK, va="top", ha="left")
 
 
-def plot_lollipop(cells: pd.DataFrame, path_stem: Path) -> None:
+def plot_lollipop(cells: pd.DataFrame, path_stem: Path, *, write_pdf: bool = False) -> None:
     plt.rcParams.update({
         "font.family": "DejaVu Sans",
         "figure.dpi": 200,
@@ -236,8 +237,9 @@ def plot_lollipop(cells: pd.DataFrame, path_stem: Path) -> None:
     for idx, task in enumerate(TASK_ORDER):
         ax = fig.add_subplot(gs[idx // 2, idx % 2])
         render_panel(ax, cells[cells["task"].eq(task)].copy(), TASK_LABEL.get(task, task), "ABCD"[idx], show_xlabel=(idx // 2 == 1))
-    fig.savefig(path_stem.with_suffix(".png"), dpi=240)
-    fig.savefig(path_stem.with_suffix(".pdf"), facecolor=PAPER_BG)
+    fig.savefig(path_stem.with_suffix(".png"), dpi=PNG_DPI)
+    if write_pdf:
+        fig.savefig(path_stem.with_suffix(".pdf"), facecolor=PAPER_BG)
     plt.close(fig)
 
 
@@ -294,7 +296,7 @@ def main() -> None:
     cells.to_csv(ANALYSIS / f"{OUT_PREFIX}_model_task_cells.csv", index=False)
     stem = FIGURES / f"{OUT_PREFIX}_model_task_lollipop"
     plot_lollipop(cells, stem)
-    figure_paths = [stem.with_suffix(".png"), stem.with_suffix(".pdf")]
+    figure_paths = [stem.with_suffix(".png")]
     write_summary_md(aggregate, figure_paths)
     print(f"summary: {ANALYSIS / f'{OUT_PREFIX}_summary.md'}")
     print(f"figure: {stem.with_suffix('.png')}")

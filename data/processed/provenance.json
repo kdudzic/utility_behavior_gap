@@ -1,0 +1,82 @@
+[
+  {
+    "path": "data/processed/framed_user_strong_panel_pairs.csv.gz",
+    "sha256": "8aaba9e406a70f9a6df2b5a5354bddb53e8153212944c97cc44610a27c6282a7",
+    "source": "outputs/analysis/framed_user_strong_panel_pairs.csv",
+    "source_sha256": "6c88210f6d1d99bdcaa70ac823b0e07b115a4eca84786ba9b9e272788471d80c",
+    "transformation": "gzip only",
+    "rows": null
+  },
+  {
+    "path": "data/processed/canonical_highn_utility_gap_trend__gap-actor-z_trials.csv.gz",
+    "sha256": "00015c60a239439f792ba3a8e5a494f07db052a45f7b5ae2c57c50375538e771",
+    "source": "outputs/analysis/canonical_highn_utility_gap_trend__gap-actor-z_trials.csv",
+    "source_sha256": "33ee09c15b124b82bdd1abc82127f933fc8ce6cc674cd333bf0236a90e1924e0",
+    "transformation": "gzip only",
+    "rows": null
+  },
+  {
+    "path": "data/processed/final_text_analysis_pair_deltas.csv.gz",
+    "sha256": "90b1e7d86ad289a2190632587b4393c7a4ecfb5ec69a6b888840cd6569bf55b7",
+    "source": "outputs/analysis/final_text_analysis_pair_deltas.csv",
+    "source_sha256": "d4b49a2830d7ba24137215f21b9364ff377ac344f953580ab05b3fc179d3e4c6",
+    "transformation": "gzip only",
+    "rows": null
+  },
+  {
+    "path": "data/processed/framed_user_prompt_role_pair_deltas.csv.gz",
+    "sha256": "7ad7c22ae2698d1f35c1f7a47dbcab6b7d33a10687c2ff755c623aef579a16a3",
+    "source": "outputs/analysis/framed_user_prompt_role_pair_deltas.csv",
+    "source_sha256": "2ce406279df98e3f5319fa3275510720562fc9c03c169fd0c16a3905a34284c9",
+    "transformation": "gzip only",
+    "rows": null
+  },
+  {
+    "path": "data/processed/moral_low_vs_framed_empty_current_pair_deltas_for_selection.csv.gz",
+    "sha256": "44257115270bd79caf2465de6059e1c225b45de890fa840d431a77ff19b464ff",
+    "source": "outputs/analysis/moral_low_vs_framed_empty_current_pair_deltas_for_selection.csv",
+    "source_sha256": "d932a59aa4359628a846d2db1644e8c644c83500d6c1fad1ae5b0824832ccbc2",
+    "transformation": "gzip only",
+    "rows": null
+  },
+  {
+    "path": "data/processed/output_validity.csv.gz",
+    "sha256": "7551e67bfce8d9601e94627678a2dba4eedb67627e5302d298c0830c994e1296",
+    "source": "outputs/analysis/final_text_analysis_by_output.csv",
+    "source_sha256": "7e93156069c748b519f83f1eea9947de995ad85c96993ca52337b52e2116af24",
+    "transformation": "selected columns; rows and order unchanged",
+    "rows": 81900
+  },
+  {
+    "path": "data/processed/canonical_highn_moral_refusal_classifications.jsonl.gz",
+    "sha256": "60dc71cad8cfa8f0861af59c9b36189bca399ecea489261c54c9d75c3adfd13b",
+    "source": "outputs/analysis/canonical_highn_moral_refusal_classifications.jsonl",
+    "source_sha256": "6a5e984d50e8169b6c0968f98ce871ec346b254fdd0d381751dd4d7eae02973f",
+    "transformation": "gzip only",
+    "rows": null
+  },
+  {
+    "path": "data/processed/qwen35_followup_pair_inputs.csv.gz",
+    "sha256": "0713ad04dfc1dbed8da1e7c485e17e6fdc054d0287b866da8c38e2932a2f83c3",
+    "source": "outputs/api/runs/essay__qwen35_reasoning_stance_followup__qwen3.5-9b-or__seed-20260915__hash-2994eb3b2711/analysis/qwen35_reasoning_stance_pair_outcomes.csv",
+    "source_sha256": "b29e2855177a903c6d56b700e0484f543d32aedfeeb6e744bbc9c97fbd5dbb8f",
+    "transformation": "selected columns; rows and order unchanged",
+    "rows": 1920
+  },
+  {
+    "path": "data/processed/qwen35_followup_local_labels.jsonl.gz",
+    "sha256": "a41c49aaf2a76cd43ce3c82b1ef86a5d3e31da096f0d91f6003f36aa92b509e8",
+    "source": "outputs/analysis/incentive_belief_qwen9b_followup_traces.jsonl",
+    "source_sha256": "294b06276a45412acea776d402b45f829d4b6cef719b84bbb6e8e3acfb82594c",
+    "transformation": "gzip only",
+    "rows": null
+  },
+  {
+    "path": "data/processed/qwen35_old_plus_followup_reasoning_traces.jsonl.gz",
+    "sha256": "9223c482985835a94b13c146b48a586f726cba4f4630047c17f93436c20c1a66",
+    "source": "outputs/api/runs/essay__qwen35_reasoning_stance_followup__qwen3.5-9b-or__seed-20260915__hash-2994eb3b2711/qwen35_old_plus_followup_reasoning_traces.jsonl.gz",
+    "source_sha256": "9223c482985835a94b13c146b48a586f726cba4f4630047c17f93436c20c1a66",
+    "transformation": "unchanged gzip",
+    "rows": null
+  }
+]

@@ -7,13 +7,13 @@ import argparse
 import asyncio
 import os
 
-from litellm import acompletion
-
 from utility_behavior_gap.io_utils import load_env_file
 from utility_behavior_gap.paths import ROOT
 
 
 async def probe(model: str) -> None:
+    from litellm import acompletion
+
     load_env_file(ROOT / ".env")
     if not os.environ.get("OPENROUTER_API_KEY", "").strip():
         raise RuntimeError("OPENROUTER_API_KEY is required in .env or the shell environment")

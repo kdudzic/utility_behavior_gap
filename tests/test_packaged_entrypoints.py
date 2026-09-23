@@ -38,8 +38,7 @@ ENTRYPOINT_MODULES = [
 
 
 def test_reproduction_entrypoints_live_under_source_package():
+    source = Path(__file__).resolve().parents[1] / "src" / "utility_behavior_gap" / "scripts"
     for module_name in ENTRYPOINT_MODULES:
-        importlib.import_module(module_name)
-
-    repo_root = Path(__file__).resolve().parents[1]
-    assert not (repo_root / "scripts").exists()
+        module = importlib.import_module(module_name)
+        assert Path(module.__file__).resolve().parent == source

@@ -1,0 +1,28 @@
+name: Offline paper reproduction
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: paper_reproduction/requirements.txt
+      - run: python -m pip install -r paper_reproduction/requirements.txt
+      - run: python -m pytest tests/test_paper_reproduction.py tests/test_reasoning_trace_analysis.py tests/test_analysis.py tests/test_packaged_entrypoints.py -q
+      - run: python paper_reproduction/reproduce.py run

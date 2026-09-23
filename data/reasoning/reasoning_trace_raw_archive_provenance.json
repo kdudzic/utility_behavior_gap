@@ -1,0 +1,19 @@
+{
+  "source_archive": "outputs/api_runs_archive_2026-07-17.tar.gz",
+  "archive_members": [
+    "runs/essay__modgrid_essay_highlow_reasoning_traces_medium__deepseek-v3.2-or__2026-06-16_06-53-38Z__hash-5d85a4e42aa5/generations.jsonl",
+    "runs/essay__modgrid_essay_highlow_reasoning_traces_medium__glm-5.1-or__2026-06-16_06-54-44Z__hash-9bf588b44c48/generations.jsonl",
+    "runs/essay__modgrid_essay_highlow_reasoning_traces_medium__gpt-5.4-mini-or__2026-06-16_06-52-28Z__hash-4f05c1f67576/generations.jsonl",
+    "runs/essay__modgrid_essay_highlow_reasoning_traces_medium__kimi-k2.5-or__2026-06-16_06-55-32Z__hash-f2e39819e645/generations.jsonl",
+    "runs/essay__modgrid_essay_highlow_reasoning_traces_medium__mimo-v25-pro-or__2026-06-16_06-55-52Z__hash-b3fde81b8386/generations.jsonl",
+    "runs/essay__modgrid_essay_highlow_reasoning_traces_medium__qwen3.5-9b-or__2026-06-16_06-56-09Z__hash-ee9419efefba/generations.jsonl",
+    "runs/essay__modgrid_essay_highlow_reasoning_traces_medium__qwen3.6-plus-or__2026-06-16_06-56-27Z__hash-b4c3d09e294d/generations.jsonl"
+  ],
+  "outputs": 4200,
+  "outputs_with_readable_trace": 4159,
+  "output_id_sha256": "0b8ebd6f8c0c07f84940966184f7b7fd863247639fddfaba08c466101684364f",
+  "portable_trace_input": "data/reasoning/reasoning_trace_inputs.jsonl.gz",
+  "portable_trace_input_sha256": "7efaa57857c67bb73403b926ffd4671a39c3e1158cbb5f857634a853bb7508d7",
+  "portable_saved_labels": "data/reasoning/reasoning_trace_saved_stance_labels.jsonl.gz",
+  "portable_saved_labels_sha256": "be5b7d9ec385f6760557738867f282beef4f29dbbda097d88ef798bf29d5453e"
+}

@@ -1,0 +1,19 @@
+{
+  "api_opus_labels_used": false,
+  "archived_labels_path": "/Users/christopherackerman/repos/Utility-Behavior-Gap/outputs/analysis/reasoning_trace_saved_stance_labels.jsonl.gz",
+  "archived_labels_sha256": "68425edf460ae7f47fd3300a98071f018517bcc4957b98226c56e05cd0bfe919",
+  "archived_locally_classified_traces": 577,
+  "archived_pairs_with_both_traces_classified": 278,
+  "archived_traces": 600,
+  "archived_unclassified_traces": 23,
+  "combined_compact_label_rows": 3715,
+  "combined_compact_labels_path": "/Users/christopherackerman/repos/Utility-Behavior-Gap/outputs/api/runs/essay__qwen35_reasoning_stance_followup__qwen3.5-9b-or__seed-20260915__hash-2994eb3b2711/analysis/qwen35_reasoning_stance_combined_local_labels.jsonl.gz",
+  "combined_compact_labels_sha256": "cc64c6362cdcac96d3c2eb6c26426bcb4f82c3d9ec6f983d7a6d33b305154bd0",
+  "combined_pairs_with_both_traces_classified": 1798,
+  "followup_labels_path": "/Users/christopherackerman/repos/Utility-Behavior-Gap/outputs/analysis/incentive_belief_qwen9b_followup_traces.jsonl",
+  "followup_labels_sha256": "294b06276a45412acea776d402b45f829d4b6cef719b84bbb6e8e3acfb82594c",
+  "followup_locally_classified_traces": 3138,
+  "followup_pairs_with_both_traces_classified": 1520,
+  "followup_traces": 3240,
+  "followup_unclassified_traces": 102
+}

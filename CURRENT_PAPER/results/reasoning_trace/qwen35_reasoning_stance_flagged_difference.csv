@@ -1,0 +1,3 @@
+flag,flagged_resolved,flagged_high_win_rate,unflagged_resolved,unflagged_high_win_rate,difference_flagged_minus_unflagged,fisher_exact_odds_ratio,fisher_exact_p
+explicit_disbelief,254,0.4330708661417323,455,0.5208791208791209,-0.08780825473738862,0.7026488513830286,0.028235619064606192
+suspicion_or_disbelief,662,0.48942598187311176,47,0.48936170212765956,6.427974545220039e-05,1.0002572678157962,1.0

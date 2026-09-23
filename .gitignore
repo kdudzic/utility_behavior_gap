@@ -9,7 +9,7 @@ outputs/
 results/
 data/analysis/
 data/pairs/
-data/processed/
+# Frozen data/processed inputs are versioned; generated products go in outputs/.
 data/sources/
 figures/*.svg
 

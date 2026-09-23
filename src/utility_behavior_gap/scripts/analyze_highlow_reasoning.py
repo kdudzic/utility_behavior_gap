@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import numpy as np
 from scipy.stats import beta, binomtest
 
 from utility_behavior_gap.constants import ACTOR_LABEL, TASK_LABEL
@@ -33,6 +34,8 @@ HIGH_CONDITION = "hl_high"
 LOW_CONDITION = "hl_low"
 EXPECTED_VOTES_PER_PAIR = 6
 TASKS = {"essay", "translation", "grant_proposal_abstract", "incident_postmortem"}
+AGGREGATE_BOOTSTRAP_SEED = 20260615
+AGGREGATE_BOOTSTRAP_ITERATIONS = 5000
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -405,6 +408,13 @@ def summarize_overall(pairs: pd.DataFrame) -> pd.DataFrame:
         ("by_actor", ["actor", "actor_label"]),
         ("by_domain", ["domain"]),
     ]
+    aggregate_cell_cols = {
+        "overall": ["actor", "task", "domain"],
+        "by_task": ["actor", "domain"],
+        "by_actor": ["task", "domain"],
+        "by_domain": ["actor", "task"],
+    }
+    bootstrap_index = 0
     for scope, cols in specs:
         grouped = [((), pairs)] if not cols else list(pairs.groupby(cols, dropna=False, sort=True))
         for key, sub in grouped:
@@ -416,7 +426,30 @@ def summarize_overall(pairs: pd.DataFrame) -> pd.DataFrame:
             losses = int(sub["low_win"].sum())
             ties = int(sub["tie"].sum())
             n_excl_ties = wins + losses
-            ci_lo, ci_hi = exact_familywise_ci(wins, n_excl_ties, 1)
+            pooled_rate = wins / n_excl_ties if n_excl_ties else math.nan
+            arrays: list[np.ndarray] = []
+            resolved_sub = sub[sub["resolved_excluding_ties"].eq(1)]
+            for _, cell in resolved_sub.groupby(aggregate_cell_cols[scope], dropna=False, sort=True):
+                arrays.append(cell["high_win"].to_numpy(dtype=float))
+            if arrays:
+                equal_cell_rate = float(np.mean([array.mean() for array in arrays]))
+                seed = AGGREGATE_BOOTSTRAP_SEED + bootstrap_index
+                rng = np.random.default_rng(seed)
+                estimates = np.empty(AGGREGATE_BOOTSTRAP_ITERATIONS)
+                for iteration in range(AGGREGATE_BOOTSTRAP_ITERATIONS):
+                    sampled_cells = rng.integers(0, len(arrays), size=len(arrays))
+                    rates = [
+                        float(rng.choice(arrays[int(cell_idx)], size=len(arrays[int(cell_idx)]), replace=True).mean())
+                        for cell_idx in sampled_cells
+                    ]
+                    estimates[iteration] = float(np.mean(rates))
+                ci_lo, ci_hi = np.quantile(estimates, [0.025, 0.975])
+            else:
+                equal_cell_rate = math.nan
+                ci_lo = math.nan
+                ci_hi = math.nan
+                seed = AGGREGATE_BOOTSTRAP_SEED + bootstrap_index
+            bootstrap_index += 1
             row.update(
                 {
                     "pairs": int(len(sub)),
@@ -424,9 +457,13 @@ def summarize_overall(pairs: pd.DataFrame) -> pd.DataFrame:
                     "low_wins": losses,
                     "ties": ties,
                     "n_excluding_ties": n_excl_ties,
-                    "high_win_rate_excluding_ties": wins / n_excl_ties if n_excl_ties else math.nan,
-                    "exact95_ci_low": ci_lo,
-                    "exact95_ci_high": ci_hi,
+                    "high_win_rate_excluding_ties": equal_cell_rate,
+                    "pooled_high_win_rate_excluding_ties": pooled_rate,
+                    "bootstrap95_ci_low": float(ci_lo),
+                    "bootstrap95_ci_high": float(ci_hi),
+                    "aggregate_cells": len(arrays),
+                    "bootstrap_seed": seed,
+                    "bootstrap_iterations": AGGREGATE_BOOTSTRAP_ITERATIONS,
                     "net_score_all_pairs": (wins - losses) / len(sub) if len(sub) else math.nan,
                     "mean_high_reasoning_tokens": float(sub["high_reasoning_tokens"].mean()),
                     "mean_low_reasoning_tokens": float(sub["low_reasoning_tokens"].mean()),
@@ -542,18 +579,28 @@ def main() -> None:
         default=OUT_PREFIX,
         help="Prefix for output files in outputs/analysis.",
     )
+    parser.add_argument(
+        "--pair-outcomes",
+        type=Path,
+        help="Recompute summaries from an existing complete pair-outcomes CSV without reopening raw runs.",
+    )
     args = parser.parse_args()
 
-    manifests = manifest_paths(args)
-    if not manifests:
-        raise FileNotFoundError(f"No manifest lists found matching {RUNS / DEFAULT_MANIFEST_GLOB}")
-
     ANALYSIS.mkdir(parents=True, exist_ok=True)
-    pairs, audit = build_pair_rows(manifests, comparison_suffix=args.comparison_suffix)
+    if args.pair_outcomes:
+        pairs = pd.read_csv(args.pair_outcomes)
+        prefix = args.pair_outcomes.stem.removesuffix("_pair_outcomes")
+        existing_audit_path = args.pair_outcomes.with_name(f"{prefix}_audit.csv")
+        audit = pd.read_csv(existing_audit_path) if existing_audit_path.exists() else pd.DataFrame()
+    else:
+        manifests = manifest_paths(args)
+        if not manifests:
+            raise FileNotFoundError(f"No manifest lists found matching {RUNS / DEFAULT_MANIFEST_GLOB}")
+        pairs, audit = build_pair_rows(manifests, comparison_suffix=args.comparison_suffix)
+        prefix = output_prefix(manifests, args)
     model_task = summarize_model_task(pairs)
     overall = summarize_overall(pairs)
 
-    prefix = output_prefix(manifests, args)
     pair_path = ANALYSIS / f"{prefix}_pair_outcomes.csv"
     audit_path = ANALYSIS / f"{prefix}_audit.csv"
     model_task_path = ANALYSIS / f"{prefix}_model_task.csv"

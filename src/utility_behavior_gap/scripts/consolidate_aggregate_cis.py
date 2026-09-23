@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -82,7 +83,8 @@ class Contrast:
         self.row_filter = row_filter
 
     def load(self) -> list[Row]:
-        with self.path.open(newline="") as handle:
+        opener = gzip.open if self.path.suffix == ".gz" else open
+        with opener(self.path, "rt", newline="") as handle:
             rows = list(csv.DictReader(handle))
         if self.row_filter is not None:
             rows = [r for r in rows if self.row_filter(r)]

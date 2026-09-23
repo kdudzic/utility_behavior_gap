@@ -96,6 +96,16 @@ def summarize_pattern(df: pd.DataFrame, feature: str, group_cols: list[str]) -> 
         low_wins = int(sub["low_win"].sum())
         ties = int(sub["tie"].sum())
         resolved = high_wins + low_wins
+        if resolved:
+            test = binomtest(high_wins, resolved, 0.5, alternative="two-sided")
+            interval = test.proportion_ci(confidence_level=0.95, method="exact")
+            ci_low = float(interval.low)
+            ci_high = float(interval.high)
+            p_value = float(test.pvalue)
+        else:
+            ci_low = math.nan
+            ci_high = math.nan
+            p_value = math.nan
         row.update(
             {
                 "feature": feature,
@@ -105,6 +115,9 @@ def summarize_pattern(df: pd.DataFrame, feature: str, group_cols: list[str]) -> 
                 "ties": ties,
                 "n_excluding_ties": resolved,
                 "high_win_rate_excluding_ties": high_wins / resolved if resolved else math.nan,
+                "exact95_ci_low": ci_low,
+                "exact95_ci_high": ci_high,
+                "two_sided_binomial_p": p_value,
                 "net_score_all_pairs": (high_wins - low_wins) / len(sub) if len(sub) else math.nan,
             }
         )
@@ -140,7 +153,16 @@ def directional_tests(df: pd.DataFrame, feature: str, group_cols: list[str]) -> 
         losses = int(sub["mention_side_loses"].sum())
         ties = int(sub["tie"].sum())
         resolved = wins + losses
-        p = float(binomtest(wins, resolved, 0.5, alternative="two-sided").pvalue) if resolved else math.nan
+        if resolved:
+            test = binomtest(wins, resolved, 0.5, alternative="two-sided")
+            interval = test.proportion_ci(confidence_level=0.95, method="exact")
+            p = float(test.pvalue)
+            ci_low = float(interval.low)
+            ci_high = float(interval.high)
+        else:
+            p = math.nan
+            ci_low = math.nan
+            ci_high = math.nan
         row.update(
             {
                 "feature": feature,
@@ -150,6 +172,8 @@ def directional_tests(df: pd.DataFrame, feature: str, group_cols: list[str]) -> 
                 "ties": ties,
                 "n_excluding_ties": resolved,
                 "mention_side_win_rate_excluding_ties": wins / resolved if resolved else math.nan,
+                "exact95_ci_low": ci_low,
+                "exact95_ci_high": ci_high,
                 "net_alignment_score_all_pairs": (wins - losses) / len(sub) if len(sub) else math.nan,
                 "two_sided_binomial_p": p,
             }
@@ -277,6 +301,8 @@ def write_summary(
         "ties",
         "n_excluding_ties",
         "mention_side_win_rate_excluding_ties",
+        "exact95_ci_low",
+        "exact95_ci_high",
         "net_alignment_score_all_pairs",
         "two_sided_binomial_p",
     ]
@@ -291,6 +317,9 @@ def write_summary(
         "ties",
         "n_excluding_ties",
         "high_win_rate_excluding_ties",
+        "exact95_ci_low",
+        "exact95_ci_high",
+        "two_sided_binomial_p",
         "net_score_all_pairs",
     ]
     lines.append(markdown_table(pattern_summary[pcols], floatfmt=".3f"))
