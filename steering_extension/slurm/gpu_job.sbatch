@@ -14,10 +14,12 @@ cd "${SLURM_SUBMIT_DIR:-$PWD}"
 export HF_HOME="${HF_HOME:-$SCRATCH/.caches/hf}"
 export HF_HUB_OFFLINE=1
 export TOKENIZERS_PARALLELISM=false
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 SHARD_ARGS=""
 if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
-  SHARD_ARGS="--shard ${SLURM_ARRAY_TASK_ID} --num-shards ${SLURM_ARRAY_TASK_COUNT}"
+  # STEER_NUM_SHARDS lets a partial re-run (e.g. --array=1,3) keep the original shard count.
+  SHARD_ARGS="--shard ${SLURM_ARRAY_TASK_ID} --num-shards ${STEER_NUM_SHARDS:-$SLURM_ARRAY_TASK_COUNT}"
 fi
 echo "node=$(hostname) gpu=$(nvidia-smi --query-gpu=name --format=csv,noheader) args=$* $SHARD_ARGS"
 exec .venv/bin/python -m "$@" $SHARD_ARGS

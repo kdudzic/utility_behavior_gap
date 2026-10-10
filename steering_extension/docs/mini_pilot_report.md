@@ -58,9 +58,51 @@ exhortation effect and the steered one are not obviously the same thing. The ran
 so single-digit resolved counts carry no signal. Choice for Phase 2b mini: layer 16 (mid-depth prior, coherent to r=0.2),
 r_max = 0.2, signed doses.
 
-## Phase 2b mini: signed dose cells (30 items)
+## Phase 0 full: 150 effort pairs + 150 role pairs (local HF, same prompts as the paper)
 
-(pending sweep choice of layer and r_max)
+| cell | resolved n | W | L | ties | win rate | 95% CI | p | words a / b | coherence a (pass>=80) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| framed_user_max_effort | 44 | 31 | 13 | 106 | 0.70 | [0.55, 0.83] | 0.010 | 412 / 392 | - |
+| framed_user_prompt_role | 56 | 31 | 25 | 94 | 0.55 | [0.41, 0.69] | 0.504 | 400 / 395 | - |
+
+Paper cells (OpenRouter, Qwen3.5-9B): effort 0.673 (37/18, 95 ties, 150 pairs); role 0.571 (56/42, 202 ties, 300 pairs).
+Both local cells reproduce the paper's point estimates, tie rates, and the +17-word effort length shift (+20 here).
+The local HF stack is a valid stand-in for the paper's OpenRouter actor.
+
+## Phase 2b mini: signed dose cells, layer 16, 30 items, 1 repeat
+
+| cell | resolved n | W | L | ties | win rate | 95% CI | p | words a / b | coherence a (pass>=80) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| baseline_rep | 11 | 6 | 5 | 19 | 0.55 | [0.23, 0.83] | 1.000 | 391 / 389 | 88 (0.83) |
+| steer_E_L16_r+0.100_response | 11 | 8 | 3 | 19 | 0.73 | [0.39, 0.94] | 0.227 | 382 / 389 | 86 (0.70) |
+| steer_E_L16_r+0.200_all | 21 | 1 | 20 | 9 | 0.05 | [0.00, 0.24] | 0.000 | 366 / 389 | 76 (0.37) |
+| steer_E_L16_r+0.200_response | 15 | 4 | 11 | 15 | 0.27 | [0.08, 0.55] | 0.118 | 370 / 389 | 81 (0.53) |
+| steer_E_L16_r-0.100_response | 10 | 1 | 9 | 20 | 0.10 | [0.00, 0.45] | 0.021 | 405 / 389 | 89 (0.87) |
+| steer_E_L16_r-0.200_response | 27 | 0 | 27 | 3 | 0.00 | [0.00, 0.13] | 0.000 | 416 / 389 | 83 (0.70) |
+| steer_rand0_L16_r+0.200_response | 4 | 3 | 1 | 26 | 0.75 | [0.19, 0.99] | 0.625 | 388 / 389 | 87 (0.83) |
+| steer_rand0_L16_r-0.200_response | 6 | 2 | 4 | 24 | 0.33 | [0.04, 0.78] | 0.688 | 387 / 389 | 91 (0.93) |
+
+Side `a` is steered (or the second baseline sample in `baseline_rep`); side `b` is the shared unsteered baseline sample.
+`r` is the dose as a fraction of the layer-16 RMS residual norm (36.5); the natural exhortation shift at this layer is r = 0.019.
+
+Reading:
+- **Signed, direction-specific effect on the negative side.** Subtracting E (r = -0.1, -0.2) makes essays lose decisively
+  (1/9 and 0/27 resolved; tie rate collapses from 63% to 10% at -0.2), with coherence intact (median 92, pass rate 0.70-0.87)
+  and essays *longer* (405-416 vs 389 words). The norm-matched random direction at the same dose is a null (2/4, 3/1, 80-87% ties).
+  This is the specificity pattern the proposal asked for: not a generic perturbation.
+- **Positive side is weak and narrow.** +0.1 wins 8/3 (0.73, CI [0.39, 0.94], n.s. at 30 items) with coherence pass rate 0.70;
+  +0.2 already loses (4/11) with coherence pass rate 0.53, and +0.2 at all positions is a clear degradation (1/20, median coherence 78).
+  r_max for positive steering is therefore about 0.1 at layer 16, 5x the natural shift; the proposal's grid should run {-0.2, -0.1, -0.05, +0.05, +0.1, +0.15}.
+- **What E looks like in text.** Reading samples: -0.2 essays are fluent but plain and formulaic; +0.1 essays add rhetorical intensity
+  ("moral imperative", "smog chokes our skies"); +0.2 turns purple ("the theft of breath", "the physics of escape").
+  E behaves like a rhetorical-elaboration axis that judges reward in moderation. Whether this matches the paper's Table 2 effort
+  feature signature is the first analysis for the full pilot (repo feature pipeline on these texts).
+- **Length.** The natural exhortation lengthens essays (+17-20 words); +E shortens them slightly (-7 to -19 words) and -E lengthens them.
+  Steering does not reproduce the length channel of the prompt effect, so any steered win is not a length artefact.
+
+## Spend
+
+OpenRouter usage today (all judging + coherence, from the key's usage counter): about $12 of the $40 authorization.
 
 ## Open issues
 

@@ -37,7 +37,10 @@ def respond_and_capture(loaded, rows: list[dict], *, max_new_tokens: int, temper
     cap_mask = torch.cat([torch.zeros_like(enc["attention_mask"], dtype=torch.float), resp_mask.float()], dim=1)
     with ResidualCapture(loaded.layers) as cap:
         cap.mask = cap_mask
-        loaded.model(input_ids=out, attention_mask=full_mask.long())
+        # Run the backbone only: skipping lm_head avoids materialising (batch, seq, vocab) logits
+        # (11.5 GB at batch 48 x 1200 tokens x 248k vocab), which OOMed on 40 GB A100s.
+        backbone = getattr(loaded.model, "model", loaded.model)
+        backbone(input_ids=out, attention_mask=full_mask.long())
     counts = resp_mask.sum(dim=1).float()
     texts = [strip_think(tok.decode(g, skip_special_tokens=True)) for g in gen]
     return cap, counts, texts
