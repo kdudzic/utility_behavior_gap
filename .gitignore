@@ -18,3 +18,6 @@ figures/*.svg
 !CURRENT_PAPER/results/**
 
 .DS_Store
+
+# Local secrets (never commit)
+.openrouter.txt
