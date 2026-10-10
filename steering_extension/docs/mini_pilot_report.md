@@ -1,6 +1,6 @@
 # Mini-pilot report (Qwen3.5-9B, essay, effort vector E)
 
-Date: 2026-10-10. Status: DRAFT, filled in as cells complete. Compute: Athena A100 40 GB nodes, 4 GPUs per step.
+Date: 2026-10-10. Status: complete through Phase 2 (full pilot); awaiting the Phase 3 PI review. Phase 4 not started. Compute: Athena A100 40 GB nodes, 4 GPUs per step.
 Judging: paper panel (claude-haiku-4.5, gemini-3.1-flash-lite-preview, gpt-5-mini), both orders, flips -> tie, panel ties excluded.
 All prompts byte-identical to the paper's canonical prompt book (framed-neutral competition wrapper, children's hospital target).
 
@@ -117,9 +117,66 @@ Options for the Phase 3 review: (a) prompt-token readout (deterministic, no samp
 (d) a two-sided role contrast (world-class vs explicitly novice) as a stronger, differently-defined construct.
 The dose cells above used v1 (42 per arm); the full pilot uses v2.
 
+## Full pilot (Phase 2): E vector v2, 60 pairs per cell (30 items x 2 repeats), paper panel
+
+| cell | resolved n | W | L | ties | win rate | 95% CI | p | words a / b | coherence mean (pass>=80) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| baseline_rep | 17 | 10 | 7 | 43 | 0.59 | [0.33, 0.82] | 0.629 | 391 / 398 | 87 (0.72) |
+| steer_E_L12_r+0.100_response | 31 | 16 | 15 | 29 | 0.52 | [0.33, 0.70] | 1.000 | 405 / 398 | 82 (0.58) |
+| steer_E_L12_r-0.100_response | 30 | 5 | 25 | 30 | 0.17 | [0.06, 0.35] | 0.000 | 378 / 398 | 90 (0.90) |
+| steer_E_L16_r+0.050_response | 17 | 11 | 6 | 43 | 0.65 | [0.38, 0.86] | 0.332 | 399 / 398 | 87 (0.80) |
+| steer_E_L16_r+0.100_response | 24 | 8 | 16 | 36 | 0.33 | [0.16, 0.55] | 0.152 | 384 / 398 | 81 (0.48) |
+| steer_E_L16_r+0.150_response | 30 | 0 | 30 | 30 | 0.00 | [0.00, 0.12] | 0.000 | 375 / 398 | 73 (0.28) |
+| steer_E_L16_r-0.050_response | 22 | 7 | 15 | 38 | 0.32 | [0.14, 0.55] | 0.134 | 399 / 398 | 90 (0.92) |
+| steer_E_L16_r-0.100_response | 33 | 7 | 26 | 27 | 0.21 | [0.09, 0.39] | 0.001 | 398 / 398 | 90 (0.92) |
+| steer_E_L16_r-0.200_response | 55 | 1 | 54 | 5 | 0.02 | [0.00, 0.10] | 0.000 | 393 / 398 | 88 (0.88) |
+| steer_E_L20_r+0.100_response | 29 | 10 | 19 | 31 | 0.34 | [0.18, 0.54] | 0.136 | 391 / 398 | 83 (0.60) |
+| steer_E_L20_r-0.100_response | 25 | 7 | 18 | 35 | 0.28 | [0.12, 0.49] | 0.043 | 398 / 398 | 90 (0.93) |
+| steer_rand0_L16_r+0.100_response | 22 | 13 | 9 | 38 | 0.59 | [0.36, 0.79] | 0.523 | 398 / 398 | 89 (0.87) |
+| steer_rand0_L16_r-0.200_response | 22 | 8 | 14 | 38 | 0.36 | [0.17, 0.59] | 0.286 | 388 / 398 | 86 (0.75) |
+| steer_rand1_L16_r+0.100_response | 20 | 9 | 11 | 40 | 0.45 | [0.23, 0.68] | 0.824 | 401 / 398 | 90 (0.88) |
+| steer_rand1_L16_r-0.200_response | 24 | 8 | 16 | 36 | 0.33 | [0.16, 0.55] | 0.152 | 375 / 398 | 87 (0.75) |
+
+Unsteered baseline coherence: mean 88, pass rate 0.80 (the single-judge 0-100 scale is harsh; "pass" is relative to that floor).
+
+Pooled controls and trend tests:
+- Random matched-norm directions at r = -0.2 (two directions pooled): 16 W / 30 L, win rate 0.35, p = 0.054. Generic perturbation at this
+  norm has a modest cost. E at -0.2: 1 W / 54 L. Fisher exact E vs random at the same norm: p = 7e-6. E at -0.1 (7/26) already hurts more than
+  random at twice the norm. Random at +0.1: 22/20, null.
+- Logistic regression of steered-side win on signed dose (layer 16, item-clustered SEs): slope 3.2 per unit r over all doses (p = 0.0005);
+  on the non-positive side (r <= 0.05) slope 16.3 (p = 5e-12); on the positive side slope -41 (p = 2e-7). The curve rises steeply from -0.2
+  to about +0.05 and falls off a cliff above it.
+- Layer robustness: -0.1 hurts at layers 12, 16 and 20 alike (5/25, 7/26, 7/18). +0.1 is null-to-negative at all three.
+
+Reading against the proposal's three criteria:
+- **Sufficiency: not established.** No positive dose beats the baseline significantly. +0.05 is 11/6 (0.65, CI [0.38, 0.86]); +0.1 and +0.15
+  lose, and their coherence drops (pass 0.48 and 0.28). The mini-pilot's 8/3 at +0.1 used the noisier v1 vector and did not replicate with v2.
+  The usable positive window is at most r ~ 0.05, 2-3x the natural prompt shift (0.014 at layer 16), and the effect there is at best the
+  size of the paper's prompt effect with wide uncertainty.
+- **Necessity-like evidence via subtraction: strong.** Removing the direction (negative addition) destroys judged quality monotonically
+  (-0.05: 0.32; -0.1: 0.21; -0.2: 0.02) with fluency intact (coherence 88-90, pass 0.88-0.92) and length unchanged. This is the proposal's
+  "signed dose-response" signature, but only on one side. The proposal's directional-ablation arm (projection-out at all layers, Arditi-style)
+  is the cleaner necessity test and has not been run yet.
+- **Specificity: supported with a caveat.** Random directions are far weaker (Fisher p = 7e-6) but not perfectly null at r = 0.2.
+  Dose comparisons should be reported alongside the random floor at the same norm, as in the Pain Axis paper.
+- **Asymmetric coherence.** Adding E degrades fluency (mean coherence 73 at +0.15) while subtracting it does not (88 at -0.2).
+  Together with the text samples (plain -> rhetorical -> purple), the direction reads as a rhetorical-elaboration axis on which the
+  unsteered model already sits near the judges' optimum; there is little headroom to add, much to remove.
+
+## Decisions for the Phase 3 review
+
+1. Accept E (v2, layer 16, response positions) as the working effort direction, with the positive-side limits above? Or re-extract with a
+   prompt-token readout / PC-denoising / 4x responses before any further E cells?
+2. Run the directional-ablation necessity arm now (cheap: one cell of 60 pairs under the max-effort prompt plus a random-ablation control)?
+3. Role vectors: R_id has no reproducible direction with this recipe (split-half cosine -0.05), R_act is weak (0.22). Choose one of the four
+   options in the reliability section, or drop role steering and keep role as a prompt-only comparison.
+4. Full grid (Phase 4) scope given the above: which tasks, whether 27B proceeds, and whether the positive-side grid should be dense in
+   [0, 0.07] rather than the proposal's {+1/4, +1/2, +1} x r_max.
+5. Feature-signature analysis (repo pipeline on the steered texts vs the paper's Table 2 effort signature) before or after Phase 4?
+
 ## Spend
 
-OpenRouter usage today (all judging + coherence, from the key's usage counter): about $12 of the $40 authorization.
+OpenRouter usage today (all judging + coherence, from the key's usage counter): $16.29 of the $40 authorization after the full pilot. GPU: roughly 10 A100-hours of the 5000-hour grant.
 
 ## Open issues
 
