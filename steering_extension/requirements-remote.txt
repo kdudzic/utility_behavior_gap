@@ -1,0 +1,13 @@
+torch>=2.5
+transformers @ git+https://github.com/huggingface/transformers.git
+accelerate>=1.0
+safetensors>=0.4
+huggingface_hub>=0.30
+hf_transfer>=0.1.8
+numpy>=1.23
+pandas>=1.5
+PyYAML>=6
+requests>=2.31
+python-dotenv>=1.0
+kernels>=0.17
+flash-linear-attention>=0.5
