@@ -100,6 +100,23 @@ Reading:
 - **Length.** The natural exhortation lengthens essays (+17-20 words); +E shortens them slightly (-7 to -19 words) and -E lengthens them.
   Steering does not reproduce the length channel of the prompt effect, so any steered win is not a length artefact.
 
+## Vector reliability (v2: 30 items x 3 tasks x 2 repeats, 180 responses per arm)
+
+| vector | relative norm L12 / L16 / L20 | cos(v1, v2) L16 | split-half cos L16 (90 vs 90 per arm) |
+| --- | --- | --- | --- |
+| E | 0.011 / 0.014 / 0.022 | 0.62 | 0.65 (Spearman-Brown reliability of the full vector ~0.79) |
+| R_act | 0.007 / 0.009 / 0.013 | -0.04 | 0.22 |
+| R_id | 0.005 / 0.006 / 0.009 | 0.09 | -0.05 |
+
+Reading: with the response-token-mean diff-of-means recipe, **E is a real but noisy direction** (its sampling noise explains part of the
+weak positive side), **R_act is barely above noise**, and **R_id has no reproducible direction at all** at 180 responses per arm:
+the "world-class vs skilled" cue leaves no consistent trace in the mean response residual. This is itself consistent with the paper's
+small, mostly non-significant role effects, but it means the proposal's R_id steering arm cannot proceed on this recipe.
+Options for the Phase 3 review: (a) prompt-token readout (deterministic, no sampling noise, averaged over many prompts),
+(b) many more responses (noise falls as 1/sqrt(n); ~0.95 reliability for E needs ~4x), (c) PC-denoising against a neutral corpus,
+(d) a two-sided role contrast (world-class vs explicitly novice) as a stronger, differently-defined construct.
+The dose cells above used v1 (42 per arm); the full pilot uses v2.
+
 ## Spend
 
 OpenRouter usage today (all judging + coherence, from the key's usage counter): about $12 of the $40 authorization.
