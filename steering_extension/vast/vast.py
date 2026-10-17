@@ -332,9 +332,16 @@ def cmd_down(a: argparse.Namespace) -> None:
         print(f"about to DESTROY instance {iid} ({info.get('gpu_name')} x{info.get('num_gpus')}, status {info.get('actual_status')}). All data on it is lost.")
         if input("type the instance id to confirm: ").strip() != str(iid):
             sys.exit("aborted")
-    vastai("destroy", "instance", str(iid), raw=False)
-    STATE.rename(STATE_DIR / f"instance.{iid}.destroyed.json")
-    print(f"instance {iid} destroyed")
+    # The API can report success while the instance keeps running; retry and verify it is gone.
+    for attempt in range(1, 6):
+        vastai("destroy", "instance", str(iid), raw=False, check=False)
+        time.sleep(20)
+        if not instance_info(iid):
+            STATE.rename(STATE_DIR / f"instance.{iid}.destroyed.json")
+            print(f"instance {iid} destroyed (verified gone after attempt {attempt})")
+            return
+        print(f"  attempt {attempt}: instance {iid} still listed as {instance_info(iid).get('actual_status')}", flush=True)
+    sys.exit(f"instance {iid} STILL LISTED after 5 destroy attempts: destroy it in the vast.ai console now (it is billing)")
 
 
 def main() -> None:
