@@ -46,8 +46,10 @@
 - Paid calls: judging reuses the paper's unchanged `run_judging.py` with the paper's
   three-judge panel; coherence scoring uses one judge. Both are OpenRouter calls and require
   the PI's explicit per-phase authorization (current authorization: Phases 0-2 of the
-  proposal, capped at $40 total). Keys live in `steering_extension/spar_openrouter.txt`, `steering_extension/spar_vastai.txt`,
-  `.openrouter.txt` or `.env` (all gitignored); never commit or print them.
+  proposal, capped at $40 total). Keys live in `~/.config/utility_behavior_gap/secrets.env` (canonical,
+  outside the tree; see `steering_extension/README.md`, Secrets), with the gitignored in-repo files
+  `steering_extension/spar_*.txt`, `.openrouter.txt`, `.env` as fallbacks; never commit or print them.
+  `python -m steering_extension.local.keys --check` audits this; a pre-commit hook blocks key material.
 - Scientific conventions carried over: temperature 1.0, per-task max_tokens (essay 900,
   grant 1400, translation 600, postmortem 3000), blank system prompt, both presentation
   orders, judge flips collapse to ties, panel ties excluded, exact-binomial CIs. Steering

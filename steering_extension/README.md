@@ -13,9 +13,31 @@ uv pip install --python .venv/bin/python -e . --no-deps
 uv pip install --python .venv/bin/python -r requirements.txt vastai safetensors scipy python-dotenv requests
 export PYTHONPATH=$PWD:$PWD/src
 ```
-Keys (all gitignored, never printed): `steering_extension/spar_vastai.txt` (vast.ai, SPAR team account),
-`steering_extension/spar_openrouter.txt` (OpenRouter, SPAR) with `.openrouter.txt` (PI's personal) as fallback.
-`steering_extension/local/keys.py` / `env.sh` load them into the environment for the scripts that need them.
+
+### Secrets
+
+Keys live outside the repo tree in `~/.config/utility_behavior_gap/secrets.env` (file mode 600, directory
+700; `XDG_CONFIG_HOME` honoured, `UBG_SECRETS_FILE` overrides the path):
+```
+OPENROUTER_API_KEY=sk-or-v1-...   # SPAR team key (default)
+VAST_API_KEY=...                  # vast.ai, SPAR team account
+```
+`steering_extension/local/keys.py` (`load_keys()`, used by the Python tools and `vast.py`) and
+`steering_extension/local/env.sh` (`source`d by `judge.sh`) load them, printing only the source name.
+Precedence per variable: process environment > `secrets.env` > the gitignored in-repo files
+`steering_extension/spar_openrouter.txt` / `steering_extension/spar_vastai.txt` > `.env`. The PI's personal
+OpenRouter key (`.openrouter.txt`, or `OPENROUTER_API_KEY_PERSONAL=` in `secrets.env`) is used only when
+`OPENROUTER_KEY_SOURCE=personal` is exported, and is never a silent fallback. Nothing prints a key value.
+
+Audit the setup (sources, lengths, permissions, gitignore status, key material in tracked files, hook):
+```bash
+.venv/bin/python -m steering_extension.local.keys --check     # exits non-zero on any problem
+```
+A pre-commit hook refuses commits that stage a key file, contain the OpenRouter key pattern, or contain the
+literal value of a loaded key; it reports path and line only. Versioned at
+`steering_extension/local/hooks/pre-commit`; install once per clone with
+`bash steering_extension/local/hooks/install_hooks.sh` (`--check` verifies it is installed and current).
+`vast push` excludes `spar_*.txt`, `.openrouter.txt` and `.env`, so no key reaches a rented box.
 
 ## vast.ai workflow
 

@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# pre-commit: refuse to commit API-key material. Prints offending paths and line numbers only, never values.
+# Versioned copy: steering_extension/local/hooks/pre-commit (install: bash steering_extension/local/hooks/install_hooks.sh).
+# Blocks when (1) a staged path is a key file, (2) the index contains the OpenRouter key pattern,
+# (3) the index contains the literal value of any loaded key (vast.ai keys have no pattern).
+# Bypass only with a reason: git commit --no-verify.
+set -u
+root="$(git rev-parse --show-toplevel)" || exit 1
+cd "$root" || exit 1
+fail=0
+
+# 1. staged key files (by name) and anything .gitignore says to ignore (force-added)
+while IFS= read -r -d '' p; do
+  case "${p##*/}" in
+    spar_*.txt|.openrouter.txt|.env|.env.*|secrets.env)
+      echo "pre-commit: BLOCKED key file staged: $p"; fail=1 ;;
+  esac
+  if git check-ignore -q --no-index -- "$p"; then
+    echo "pre-commit: BLOCKED staged path matches .gitignore: $p"; fail=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+# 2. OpenRouter key pattern anywhere in the index (the tree that would be committed)
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  echo "pre-commit: BLOCKED OpenRouter key pattern at ${line%%:*}:$(printf '%s' "$line" | cut -d: -f2)"; fail=1
+done < <(git grep --cached -nE 'sk-or-v1-[0-9a-f]{64}' -- . 2>/dev/null)
+
+# 3. literal values of the loaded keys (env > secrets.env > in-repo files), compared with grep -F via a pipe
+secrets="${UBG_SECRETS_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/utility_behavior_gap/secrets.env}"
+# shellcheck disable=SC1091
+source "$root/steering_extension/local/env.sh" >/dev/null 2>&1 || true
+literals() {
+  [ -n "${VAST_API_KEY:-}" ] && printf '%s\n' "$VAST_API_KEY"
+  [ -n "${OPENROUTER_API_KEY:-}" ] && printf '%s\n' "$OPENROUTER_API_KEY"
+  for f in "$secrets" "$root/steering_extension/spar_vastai.txt" "$root/steering_extension/spar_openrouter.txt" "$root/.openrouter.txt" "$root/.env"; do
+    [ -r "$f" ] && grep -ohE 'sk-or-v1-[0-9a-f]{64}|[0-9a-f]{64}' "$f"
+  done
+  return 0
+}
+lits="$(literals | sort -u)"
+if [ -z "$lits" ]; then
+  echo "pre-commit: note: no key values available; literal-value check skipped"
+else
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    echo "pre-commit: BLOCKED key value at ${line%%:*}:$(printf '%s' "$line" | cut -d: -f2)"; fail=1
+  done < <(git grep --cached -nF -f <(printf '%s\n' "$lits") -- . 2>/dev/null)
+fi
+unset lits
+
+if [ "$fail" -ne 0 ]; then
+  echo "pre-commit: commit refused. Remove the key material (and rotate the key if it was ever pushed)."
+  exit 1
+fi
+exit 0

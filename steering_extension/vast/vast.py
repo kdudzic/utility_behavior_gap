@@ -16,8 +16,9 @@ Subcommands (run as `.venv/bin/python -m steering_extension.vast.vast <cmd> ...`
   down     [--yes]                                                          destroy the instance (irreversible)
 
 State: `outputs/steering/vast/instance.json` holds the current instance id, ssh host/port, and
-offer details. Credentials: VAST_API_KEY env, else `steering_extension/spar_vastai.txt`, else
-`.env`. The key is passed to the vastai CLI with --api-key and is never printed.
+offer details. Credentials (via steering_extension/local/keys.py): VAST_API_KEY env, else
+`~/.config/utility_behavior_gap/secrets.env`, else `steering_extension/spar_vastai.txt`, else `.env`.
+The key is passed to the vastai CLI with --api-key and is never printed.
 
 Money: `up` starts billing until `down`. Stopped instances still bill disk. Nothing here runs
 without an explicit subcommand.
@@ -59,18 +60,18 @@ PUSH_EXCLUDES = [
 # --------------------------------------------------------------------------- helpers
 
 def api_key() -> str:
-    key = os.environ.get("VAST_API_KEY", "").strip()
+    """vast.ai key: env > ~/.config/utility_behavior_gap/secrets.env > spar_vastai.txt > .env (never printed)."""
+    try:
+        from steering_extension.local.keys import resolve_key
+    except ImportError:  # run as a plain script rather than with -m
+        sys.path.insert(0, str(ROOT))
+        from steering_extension.local.keys import resolve_key
+    key, _source = resolve_key("VAST_API_KEY")
     if not key:
-        for p in (ROOT / "steering_extension" / "spar_vastai.txt",):
-            if p.exists():
-                key = p.read_text().strip()
-                break
-    if not key and (ROOT / ".env").exists():
-        for line in (ROOT / ".env").read_text().splitlines():
-            if line.startswith("VAST_API_KEY="):
-                key = line.split("=", 1)[1].strip().strip('"').strip("'")
-    if not key:
-        sys.exit("no vast.ai key: set VAST_API_KEY or create steering_extension/spar_vastai.txt")
+        sys.exit(
+            "no vast.ai key: set VAST_API_KEY, add VAST_API_KEY=... to ~/.config/utility_behavior_gap/secrets.env, "
+            "or create steering_extension/spar_vastai.txt"
+        )
     return key
 
 
@@ -300,10 +301,11 @@ def cmd_run(a: argparse.Namespace) -> None:
     shards = a.shards or max(1, n_gpu // a.gpus_per_shard)
     name = a.name or a.module.split(".")[-1]
     module_args = " ".join(shlex.quote(x) for x in a.args)
+    env_prefix = "".join(f"{shlex.quote(kv)} " for kv in (a.env or []))
     cmd = (
         f"cd {REMOTE_ROOT} && mkdir -p outputs/steering/logs && "
         f"tmux new-session -d -s {shlex.quote(name)} "
-        f"\"NUM_SHARDS={shards} GPUS_PER_SHARD={a.gpus_per_shard} HF_HOME={REMOTE_HF} bash steering_extension/vast/run_shards.sh {a.module} {module_args} "
+        f"\"{env_prefix}JOB_NAME={shlex.quote(name)} NUM_SHARDS={shards} GPUS_PER_SHARD={a.gpus_per_shard} HF_HOME={REMOTE_HF} bash steering_extension/vast/run_shards.sh {a.module} {module_args} "
         f"> outputs/steering/logs/{name}.log 2>&1\""
     )
     ssh_run(state, cmd)
@@ -357,7 +359,8 @@ def main() -> None:
     p = sub.add_parser("pull"); p.add_argument("paths", nargs="*"); p.set_defaults(fn=cmd_pull)
     p = sub.add_parser("bootstrap"); p.add_argument("--models", default="Qwen/Qwen3.5-9B"); p.add_argument("--wait", action="store_true"); p.set_defaults(fn=cmd_bootstrap)
     p = sub.add_parser("run"); p.add_argument("module"); p.add_argument("args", nargs=argparse.REMAINDER)
-    p.add_argument("--shards", type=int, default=None); p.add_argument("--gpus-per-shard", type=int, default=1); p.add_argument("--name", default=None); p.set_defaults(fn=cmd_run)
+    p.add_argument("--shards", type=int, default=None); p.add_argument("--gpus-per-shard", type=int, default=1); p.add_argument("--name", default=None)
+    p.add_argument("--env", action="append", default=None, help="KEY=VALUE for the remote job (repeatable), e.g. STEER_USE_KERNELS=1"); p.set_defaults(fn=cmd_run)
     p = sub.add_parser("tail"); p.add_argument("--name", default="generate"); p.add_argument("--lines", type=int, default=5); p.set_defaults(fn=cmd_tail)
     p = sub.add_parser("jobs"); p.set_defaults(fn=cmd_jobs)
     p = sub.add_parser("down"); p.add_argument("--yes", action="store_true"); p.set_defaults(fn=cmd_down)

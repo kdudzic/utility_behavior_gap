@@ -173,7 +173,8 @@ def main() -> None:
         merge(args.merge)
         return
     jobs = read_jsonl(args.manifest)
-    run_dir = Path(jobs[0]["run_dir"]) if jobs and jobs[0].get("run_dir") else args.manifest.parent
+    # the manifest lives in its run dir; the recorded run_dir may be a path on another machine
+    run_dir = args.manifest.parent
     out_path = run_dir / f"generations.shard{args.shard}.jsonl"
     done = {r["output_id"] for r in read_jsonl(out_path)}
     reqs = requests_from_jobs(jobs)
