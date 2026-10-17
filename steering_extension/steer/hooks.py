@@ -78,18 +78,32 @@ def steering(layers: nn.ModuleList, layer_idx: int | None, hook) -> Iterator[Non
 
 
 class ResidualCapture:
-    """Capture per-layer mean residual over a token mask during a single forward pass."""
+    """Capture per-layer masked residual sums during a single forward pass.
+
+    Set `mask` (batch, seq) for one readout (results in `sums[layer]`, `sq_norm_sums[layer]`), or
+    `masks` {name: (batch, seq)} for several readouts in one pass (results in `multi[name][layer]`;
+    `sq_norm_sums` then uses masks["rmean"] if present, else the first mask).
+    """
 
     def __init__(self, layers: nn.ModuleList) -> None:
         self.layers = layers
         self.sums: dict[int, torch.Tensor] = {}
         self.sq_norm_sums: dict[int, torch.Tensor] = {}
+        self.multi: dict[str, dict[int, torch.Tensor]] = {}
         self.mask: torch.Tensor | None = None  # (batch, seq) float
+        self.masks: dict[str, torch.Tensor] | None = None
         self.handles = []
 
     def _make_hook(self, idx: int):
         def hook(module, args, output):
             hidden, _ = _split_output(output)
+            if self.masks is not None:
+                sq_mask = self.masks.get("rmean", next(iter(self.masks.values())))
+                for name, mask in self.masks.items():
+                    m = mask.to(hidden.dtype)[..., None]
+                    self.multi.setdefault(name, {})[idx] = (hidden * m).sum(dim=1).float()
+                self.sq_norm_sums[idx] = ((hidden.float().norm(dim=-1) ** 2) * sq_mask).sum(dim=1)
+                return None
             mask = self.mask
             if mask is None:
                 return None

@@ -1,12 +1,21 @@
-"""Extract diff-of-means steering vectors from contrast prompts.
+"""Extract diff-of-means steering vectors from contrast prompts, with three readouts per layer.
 
 Input: contrast jsonl rows {"contrast": "E", "arm": "pos"|"neg", "cid": ..., "prompt": ..., "system_prompt": ""}.
-For each row we generate a response (sampled, thinking off), then run one forward pass over
-prompt+response and record the per-layer mean residual over response tokens (Persona Vectors
-readout). Vector per layer = mean(pos) - mean(neg). Also stores per-layer RMS residual norm
-(computed on the neg arm) for dose units, and K random directions with matched norm per layer.
-Output: safetensors with keys `{contrast}/layer{L}`, `rand{k}/layer{L}`, `norm/layer{L}`,
-plus a sidecar json with cosines and counts. Shardable like generate.py; merge with --merge.
+For each row we sample a response (thinking off), then run one forward pass over prompt+response
+and record, at every decoder-block output:
+  * rmean  : mean residual over response tokens (Persona Vectors readout; the pilot's recipe)
+  * astart : residual at the last prompt token (the assistant-start position, whose output predicts
+             the first response token; deterministic given the prompt)
+  * pmean  : mean residual over the prompt tokens (user prompt incl. chat template; deterministic)
+Per-response readouts are stored (fp16) so the merge step can compute split-half reliability and
+held-out projection AUC per layer and readout (layer_profile.csv), as well as the vectors.
+
+Vector per layer = mean(pos) - mean(neg). Keys in vectors.safetensors:
+  `{contrast}/layer{L}`         rmean vector (backward compatible with the pilot)
+  `{contrast}_astart/layer{L}`, `{contrast}_pmean/layer{L}`
+  `rand{k}/layer{L}`            random directions norm-matched to the first contrast's rmean vector
+  `norm/layer{L}`               RMS residual norm over response tokens (dose unit)
+Shardable like generate.py; merge with --merge --out-dir <dir>.
 """
 from __future__ import annotations
 
@@ -22,28 +31,42 @@ from steering_extension.steer.generate import append_jsonl, read_jsonl
 from steering_extension.steer.hooks import ResidualCapture
 from steering_extension.steer.model import chat_input_ids, load_model, strip_think
 
+READOUTS = ("rmean", "astart", "pmean")
+
 
 @torch.inference_mode()
 def respond_and_capture(loaded, rows: list[dict], *, max_new_tokens: int, temperature: float):
+    """Return per-layer readouts (L, batch, d) for each of rmean/astart/pmean, plus sq norms and texts."""
     tok = loaded.tokenizer
     ids = [chat_input_ids(loaded, r.get("system_prompt", ""), r["prompt"]) for r in rows]
     enc = tok.pad({"input_ids": ids}, padding=True, return_tensors="pt").to(loaded.device)
     prompt_len = enc["input_ids"].shape[1]
     out = loaded.model.generate(**enc, do_sample=temperature > 0, temperature=temperature if temperature > 0 else None, top_p=1.0, top_k=0, max_new_tokens=max_new_tokens, pad_token_id=tok.pad_token_id)
-    # response mask: generated, non-pad tokens
     gen = out[:, prompt_len:]
-    resp_mask = (gen != tok.pad_token_id)
-    full_mask = torch.cat([enc["attention_mask"].bool(), resp_mask], dim=1)
-    cap_mask = torch.cat([torch.zeros_like(enc["attention_mask"], dtype=torch.float), resp_mask.float()], dim=1)
+    resp_mask = gen != tok.pad_token_id
+    prompt_mask = enc["attention_mask"].bool()
+    full_mask = torch.cat([prompt_mask, resp_mask], dim=1)
+    B = out.shape[0]
+    # three masks: response tokens, last prompt token (left padding => index prompt_len-1 for all), prompt tokens
+    m_resp = torch.cat([torch.zeros_like(prompt_mask, dtype=torch.float), resp_mask.float()], dim=1)
+    m_astart = torch.zeros_like(full_mask, dtype=torch.float)
+    m_astart[:, prompt_len - 1] = 1.0
+    m_pmean = torch.cat([prompt_mask.float(), torch.zeros_like(resp_mask, dtype=torch.float)], dim=1)
+    backbone = getattr(loaded.model, "model", loaded.model)
+    masks = {"rmean": m_resp, "astart": m_astart, "pmean": m_pmean}
     with ResidualCapture(loaded.layers) as cap:
-        cap.mask = cap_mask
-        # Run the backbone only: skipping lm_head avoids materialising (batch, seq, vocab) logits
-        # (11.5 GB at batch 48 x 1200 tokens x 248k vocab), which OOMed on 40 GB A100s.
-        backbone = getattr(loaded.model, "model", loaded.model)
+        cap.masks = masks
         backbone(input_ids=out, attention_mask=full_mask.long())
-    counts = resp_mask.sum(dim=1).float()
+    L = len(cap.sq_norm_sums)
+    readouts = {}
+    for name, mask in masks.items():
+        counts = mask.sum(dim=1).clamp(min=1.0)
+        stack = torch.stack([cap.multi[name][l] for l in range(L)], dim=0)  # (L, B, d) float32
+        readouts[name] = (stack / counts[None, :, None]).cpu()
+    sq = torch.stack([cap.sq_norm_sums[l] for l in range(L)], dim=0).cpu()  # (L, B)
+    n_resp = resp_mask.sum(dim=1).float().cpu()
     texts = [strip_think(tok.decode(g, skip_special_tokens=True)) for g in gen]
-    return cap, counts, texts
+    return readouts, sq, n_resp, texts
 
 
 def main() -> None:
@@ -59,6 +82,8 @@ def main() -> None:
     ap.add_argument("--merge", action="store_true")
     ap.add_argument("--n-random", type=int, default=5)
     ap.add_argument("--seed", type=int, default=20261010)
+    ap.add_argument("--n-splits", type=int, default=20, help="random split-half repetitions in --merge")
+    ap.add_argument("--k-folds", type=int, default=5, help="folds for held-out projection AUC in --merge")
     args = ap.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     if args.merge:
@@ -67,92 +92,125 @@ def main() -> None:
     rows = read_jsonl(args.contrasts)
     rows = [r for i, r in enumerate(rows) if i % args.num_shards == args.shard]
     loaded = load_model(args.model)
-    L, d = loaded.num_layers, loaded.hidden_size
-    acc: dict[tuple[str, str], torch.Tensor] = {}
-    sq: dict[tuple[str, str], torch.Tensor] = {}
-    n_tok: dict[tuple[str, str], float] = {}
-    n_resp: dict[tuple[str, str], int] = {}
     resp_log = args.out_dir / f"responses.shard{args.shard}.jsonl"
     rows.sort(key=lambda r: len(r["prompt"]))
+    per_resp: dict[str, list[torch.Tensor]] = {k: [] for k in READOUTS}
+    sq_all: list[torch.Tensor] = []
+    n_tok_all: list[torch.Tensor] = []
+    meta_rows: list[dict] = []
     for i in range(0, len(rows), args.batch_size):
         batch = rows[i : i + args.batch_size]
-        cap, counts, texts = respond_and_capture(loaded, batch, max_new_tokens=args.max_new_tokens, temperature=args.temperature)
-        for j, r in enumerate(batch):
-            key = (r["contrast"], r["arm"])
-            if key not in acc:
-                acc[key] = torch.zeros(L, d)
-                sq[key] = torch.zeros(L)
-                n_tok[key] = 0.0
-                n_resp[key] = 0
-            for l in range(L):
-                acc[key][l] += cap.sums[l][j].cpu()
-                sq[key][l] += cap.sq_norm_sums[l][j].cpu()
-            n_tok[key] += float(counts[j].item())
-            n_resp[key] += 1
-        append_jsonl(resp_log, [{**r, "response": t, "response_tokens": int(c)} for r, t, c in zip(batch, texts, counts)])
+        readouts, sq, n_resp, texts = respond_and_capture(loaded, batch, max_new_tokens=args.max_new_tokens, temperature=args.temperature)
+        for k in READOUTS:
+            per_resp[k].append(readouts[k].to(torch.float16))  # (L, b, d)
+        sq_all.append(sq)
+        n_tok_all.append(n_resp)
+        for r, t, c in zip(batch, texts, n_resp.tolist()):
+            meta_rows.append({"contrast": r["contrast"], "arm": r["arm"], "cid": r["cid"], "response_tokens": int(c)})
+        append_jsonl(resp_log, [{**r, "response": t, "response_tokens": int(c)} for r, t, c in zip(batch, texts, n_resp.tolist())])
         print(f"{i+len(batch)}/{len(rows)}", flush=True)
-    tensors = {}
-    meta = {}
-    for key in acc:
-        c, a = key
-        tensors[f"sum/{c}/{a}"] = acc[key]
-        tensors[f"sq/{c}/{a}"] = sq[key]
-        meta[f"{c}/{a}"] = {"n_tokens": n_tok[key], "n_responses": n_resp[key]}
-    save_file(tensors, str(args.out_dir / f"partial.shard{args.shard}.safetensors"))
-    (args.out_dir / f"partial.shard{args.shard}.json").write_text(json.dumps(meta, indent=1))
+    tensors = {k: torch.cat(per_resp[k], dim=1).contiguous() for k in READOUTS}  # (L, N, d) fp16
+    tensors["sq_norm_sum"] = torch.cat(sq_all, dim=1).contiguous()  # (L, N)
+    tensors["n_resp_tokens"] = torch.cat(n_tok_all, dim=0).contiguous()  # (N,)
+    save_file(tensors, str(args.out_dir / f"perresp.shard{args.shard}.safetensors"))
+    (args.out_dir / f"perresp.shard{args.shard}.json").write_text(json.dumps(meta_rows))
     print("done")
 
 
+def _auc(pos: torch.Tensor, neg: torch.Tensor) -> float:
+    # Mann-Whitney AUC
+    scores = torch.cat([pos, neg])
+    ranks = scores.argsort().argsort().float() + 1
+    r_pos = ranks[: len(pos)].sum()
+    n1, n0 = len(pos), len(neg)
+    return float((r_pos - n1 * (n1 + 1) / 2) / (n1 * n0))
+
+
 def merge(args) -> None:
-    sums: dict[str, torch.Tensor] = {}
-    sqs: dict[str, torch.Tensor] = {}
-    meta: dict[str, dict] = {}
-    for p in sorted(args.out_dir.glob("partial.shard*.safetensors")):
+    parts = sorted(args.out_dir.glob("perresp.shard*.safetensors"))
+    if not parts:
+        raise SystemExit(f"no perresp shards in {args.out_dir}")
+    data = {k: [] for k in (*READOUTS, "sq_norm_sum", "n_resp_tokens")}
+    meta: list[dict] = []
+    for p in parts:
         t = load_file(str(p))
-        m = json.loads(p.with_suffix(".json").read_text())
-        for k, v in t.items():
-            kind, c, a = k.split("/")
-            tgt = sums if kind == "sum" else sqs
-            tgt[f"{c}/{a}"] = tgt.get(f"{c}/{a}", 0) + v
-        for k, v in m.items():
-            if k not in meta:
-                meta[k] = {"n_tokens": 0.0, "n_responses": 0}
-            meta[k]["n_tokens"] += v["n_tokens"]
-            meta[k]["n_responses"] += v["n_responses"]
-    contrasts = sorted({k.split("/")[0] for k in sums})
-    out: dict[str, torch.Tensor] = {}
-    report: dict = {"contrasts": {}, "layers": {}}
+        for k in data:
+            data[k].append(t[k])
+        meta.extend(json.loads(p.with_suffix(".json").read_text()))
+    X = {k: torch.cat(data[k], dim=1).float() for k in READOUTS}  # (L, N, d)
+    sq = torch.cat(data["sq_norm_sum"], dim=1).float()  # (L, N)
+    ntok = torch.cat(data["n_resp_tokens"], dim=0).float()  # (N,)
+    L, N, d = X["rmean"].shape
+    contrasts = sorted({m["contrast"] for m in meta})
+    idx = {(c, a): torch.tensor([i for i, m in enumerate(meta) if m["contrast"] == c and m["arm"] == a]) for c in contrasts for a in ("pos", "neg")}
+    # dose unit: RMS residual over response tokens, neg arm of the first contrast
+    ref = idx[(contrasts[0], "neg")]
+    rms = torch.sqrt(sq[:, ref].sum(dim=1) / ntok[ref].sum())  # (L,)
+    out: dict[str, torch.Tensor] = {f"norm/layer{l}": rms[l].reshape(1) for l in range(L)}
+    report: dict = {"n_responses": N, "contrasts": {}, "rms_norm_by_layer": [round(float(x), 3) for x in rms], "readouts": list(READOUTS)}
     gen = torch.Generator().manual_seed(args.seed)
-    L = next(iter(sums.values())).shape[0]
-    # per-layer RMS residual norm from the first contrast's neg arm
-    ref = f"{contrasts[0]}/neg"
-    rms = torch.sqrt(sqs[ref] / meta[ref]["n_tokens"])
-    for l in range(L):
-        out[f"norm/layer{l}"] = rms[l].reshape(1)
-    rand_dirs = {k: torch.randn(L, next(iter(sums.values())).shape[1], generator=gen) for k in range(args.n_random)}
+    profile_rows: list[dict] = []
     for c in contrasts:
-        pos = sums[f"{c}/pos"] / meta[f"{c}/pos"]["n_tokens"]
-        neg = sums[f"{c}/neg"] / meta[f"{c}/neg"]["n_tokens"]
-        vec = pos - neg
-        report["contrasts"][c] = {"n_pos": meta[f"{c}/pos"]["n_responses"], "n_neg": meta[f"{c}/neg"]["n_responses"], "norm_by_layer": [round(float(x), 3) for x in vec.norm(dim=1)], "rel_norm_by_layer": [round(float(x), 4) for x in vec.norm(dim=1) / rms]}
-        for l in range(L):
-            out[f"{c}/layer{l}"] = vec[l].contiguous()
-    # random matched-norm directions (matched to first contrast)
+        ip, ineg = idx[(c, "pos")], idx[(c, "neg")]
+        report["contrasts"][c] = {"n_pos": len(ip), "n_neg": len(ineg)}
+        for ro in READOUTS:
+            Xp, Xn = X[ro][:, ip], X[ro][:, ineg]  # (L, np, d), (L, nn, d)
+            vec = Xp.mean(dim=1) - Xn.mean(dim=1)  # (L, d)
+            key = c if ro == "rmean" else f"{c}_{ro}"
+            for l in range(L):
+                out[f"{key}/layer{l}"] = vec[l].contiguous()
+            # split-half reliability
+            sh = torch.zeros(args.n_splits, L)
+            for s in range(args.n_splits):
+                pp = ip[torch.randperm(len(ip), generator=gen)]
+                nn_ = ineg[torch.randperm(len(ineg), generator=gen)]
+                a = X[ro][:, pp[: len(pp) // 2]].mean(1) - X[ro][:, nn_[: len(nn_) // 2]].mean(1)
+                b = X[ro][:, pp[len(pp) // 2 :]].mean(1) - X[ro][:, nn_[len(nn_) // 2 :]].mean(1)
+                sh[s] = torch.nn.functional.cosine_similarity(a, b, dim=1)
+            sh_mean = sh.mean(0)
+            sb = 2 * sh_mean / (1 + sh_mean)  # Spearman-Brown for the full-sample vector
+            # k-fold held-out projection AUC (direction fit on k-1 folds, projections on the held-out fold)
+            aucs = torch.zeros(L)
+            fp = ip[torch.randperm(len(ip), generator=gen)]
+            fn = ineg[torch.randperm(len(ineg), generator=gen)]
+            fold_p = [fp[k :: args.k_folds] for k in range(args.k_folds)]
+            fold_n = [fn[k :: args.k_folds] for k in range(args.k_folds)]
+            for l in range(L):
+                vals = []
+                for k in range(args.k_folds):
+                    tr_p = torch.cat([fold_p[j] for j in range(args.k_folds) if j != k])
+                    tr_n = torch.cat([fold_n[j] for j in range(args.k_folds) if j != k])
+                    v = X[ro][l, tr_p].mean(0) - X[ro][l, tr_n].mean(0)
+                    v = v / (v.norm() + 1e-8)
+                    vals.append(_auc(X[ro][l, fold_p[k]] @ v, X[ro][l, fold_n[k]] @ v))
+                aucs[l] = sum(vals) / len(vals)
+            vnorm = vec.norm(dim=1)
+            # relative norm against the residual RMS of the same readout's tokens is not stored; use response RMS
+            for l in range(L):
+                profile_rows.append({"contrast": c, "readout": ro, "layer": l, "split_half_cos": round(float(sh_mean[l]), 4), "spearman_brown": round(float(sb[l]), 4), "heldout_auc": round(float(aucs[l]), 4), "vector_norm": round(float(vnorm[l]), 4), "rel_norm_vs_resp_rms": round(float(vnorm[l] / rms[l]), 5)})
+    # random directions, norm-matched to the first contrast's rmean vector
     base = contrasts[0]
-    for k, dirs in rand_dirs.items():
+    for k in range(args.n_random):
+        dirs = torch.randn(L, d, generator=gen)
         for l in range(L):
-            v = dirs[l] / dirs[l].norm() * out[f"{base}/layer{l}"].norm()
-            out[f"rand{k}/layer{l}"] = v.contiguous()
-    if len(contrasts) > 1:
-        cos = {}
-        for i, a in enumerate(contrasts):
-            for b in contrasts[i + 1 :]:
-                cos[f"{a}|{b}"] = [round(float(torch.nn.functional.cosine_similarity(out[f"{a}/layer{l}"], out[f"{b}/layer{l}"], dim=0)), 3) for l in range(L)]
-        report["cosines"] = cos
-    report["rms_norm_by_layer"] = [round(float(x), 3) for x in rms]
+            out[f"rand{k}/layer{l}"] = (dirs[l] / dirs[l].norm() * out[f"{base}/layer{l}"].norm()).contiguous()
+    # cosines between contrasts (rmean) and between readouts of the same contrast
+    cos: dict[str, list[float]] = {}
+    for i, a in enumerate(contrasts):
+        for b in contrasts[i + 1 :]:
+            cos[f"{a}|{b}"] = [round(float(torch.nn.functional.cosine_similarity(out[f"{a}/layer{l}"], out[f"{b}/layer{l}"], dim=0)), 3) for l in range(L)]
+    for c in contrasts:
+        for ro in READOUTS[1:]:
+            cos[f"{c}|{c}_{ro}"] = [round(float(torch.nn.functional.cosine_similarity(out[f"{c}/layer{l}"], out[f"{c}_{ro}/layer{l}"], dim=0)), 3) for l in range(L)]
+    report["cosines"] = cos
     save_file(out, str(args.out_dir / "vectors.safetensors"))
     (args.out_dir / "vectors_report.json").write_text(json.dumps(report, indent=1))
-    print(f"wrote {args.out_dir / 'vectors.safetensors'}; contrasts={contrasts}")
+    import csv
+    with (args.out_dir / "layer_profile.csv").open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(profile_rows[0].keys()))
+        w.writeheader()
+        w.writerows(profile_rows)
+    print(f"wrote {args.out_dir / 'vectors.safetensors'} ({len(out)} keys), layer_profile.csv ({len(profile_rows)} rows); contrasts={contrasts}")
 
 
 if __name__ == "__main__":

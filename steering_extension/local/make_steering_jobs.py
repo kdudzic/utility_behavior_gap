@@ -32,17 +32,21 @@ def main() -> None:
     ap.add_argument("--item-offset", type=int, default=0)
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--run-name", required=True)
+    ap.add_argument("--task", default="essay", help="essay (evaluation) or grant_proposal_abstract / incident_postmortem (layer sweep); comma list allowed")
     ap.add_argument("--max-tokens", type=int, default=None)
     args = ap.parse_args()
     tensors = load_file(str(args.vectors))
     vec_rel = str(args.vectors.resolve().relative_to(ROOT)) if args.vectors.resolve().is_relative_to(ROOT) else str(args.vectors.resolve())
     cells = [parse_cell(c) for c in args.cell]
-    items = task_items("essay")[args.item_offset : args.item_offset + args.items]
+    items = []
+    for t in args.task.split(","):
+        items += task_items(t)[args.item_offset : args.item_offset + args.items]
     jobs = []
     for rep in range(args.repeats):
         for row in items:
+            task = row["task"]
             neutral = framed_neutral_prompt(row)
-            base_uid = f"steer_baseline:essay:{row['item_index']}:r{rep}"
+            base_uid = f"steer_baseline:{task}:{row['item_index']}:r{rep}"
             extra = {"steering_a": None, "steering_b": None}
             if args.max_tokens:
                 extra["max_tokens"] = args.max_tokens
@@ -53,7 +57,7 @@ def main() -> None:
                 vnorm = float(np.linalg.norm(tensors[f"{c['key']}/layer{c['layer']}"].astype(np.float64)))
                 coef = c["r"] * rms / vnorm
                 cond = f"steer_{c['key']}_L{c['layer']}_r{c['r']:+.3f}_{c['mode']}"
-                uid = f"{cond}:essay:{row['item_index']}:r{rep}"
+                uid = f"{cond}:{task}:{row['item_index']}:r{rep}"
                 steer = {"vector": vec_rel, "key": c["key"], "layer": c["layer"], "coef": coef, "mode": c["mode"], "r": c["r"], "rms_norm": rms, "vector_norm": vnorm}
                 ex = {"steering_a": steer, "steering_b": None, "alias_b": f"{base_uid}::b", "cell": cond}
                 if args.max_tokens:

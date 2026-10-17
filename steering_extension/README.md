@@ -74,15 +74,41 @@ bash steering_extension/local/judge.sh outputs/steering/runs/phase0_mini 8      
 .venv/bin/python -m steering_extension.local.analyze_cells --run-dir outputs/steering/runs/phase0_mini --group-by comparison
 ```
 
-## Phase 1: vectors
+## Phase 1: vectors (three readouts) and the layer profile (Stage L1)
 
 ```bash
-.venv/bin/python -m steering_extension.local.make_contrast_set --items-per-task 30 --repeats 2 --contrasts E,R_id,R_act
-vast push && vast run --name extract steering_extension.steer.extract --contrasts outputs/steering/contrasts/contrasts.jsonl --out-dir outputs/steering/vectors/qwen3.5-9b_v2
+.venv/bin/python -m steering_extension.local.make_contrast_set --items-per-task 30 --repeats 2 --contrasts E,R_id,R_act --out outputs/steering/contrasts/contrasts_v3.jsonl
+vast push && vast run --name extract --env STEER_USE_KERNELS=1 steering_extension.steer.extract --contrasts outputs/steering/contrasts/contrasts_v3.jsonl --out-dir outputs/steering/vectors/qwen3.5-9b_v3 --batch-size 24
 vast pull vectors
 ```
-`vectors.safetensors` keys: `E/layer{L}`, `R_id/layer{L}`, `R_act/layer{L}`, `rand{k}/layer{L}` (norm-matched to E),
-`norm/layer{L}` (RMS residual norm, dose unit). `vectors_report.json` has norms, relative norms, cosines.
+Translation is excluded; extraction uses grant + postmortem, evaluation uses essay. `extract.py` stores per-response
+readouts (`perresp.shard*.safetensors`, stays on the box) and the merge writes:
+- `vectors.safetensors`: `E/layer{L}` (response-mean readout), `E_astart/layer{L}` (assistant-start token),
+  `E_pmean/layer{L}` (prompt-token mean), same for `R_id`, `R_act`; `rand{k}/layer{L}` norm-matched to `E`;
+  `norm/layer{L}` = RMS residual over response tokens (dose unit).
+- `layer_profile.csv`: per contrast x readout x layer: split-half cosine (20 random splits), Spearman-Brown,
+  5-fold held-out projection AUC, vector norm, relative norm. This is Stage L1 of `docs/layer_selection.md`:
+  pick the readout by reliability, the monitoring layer by AUC, and the candidate steering layers (depth 0.25-0.75,
+  split-half >= 0.5).
+
+## Stage L2: judge-free layer sweep (grant, then postmortem)
+
+```bash
+V=outputs/steering/vectors/qwen3.5-9b_v3/vectors.safetensors
+.venv/bin/python -m steering_extension.local.make_steering_jobs --vectors $V --run-name sweep_grant --task grant_proposal_abstract --items 30 \
+  $(for L in 8 10 12 14 16 18 20 22 24; do for r in 0.025 0.05 0.075 0.1 0.15; do echo --cell E:$L:$r; done; done)
+vast push && vast run --name sweep --env STEER_USE_KERNELS=1 steering_extension.steer.generate --manifest outputs/steering/runs/sweep_grant/generation_jobs.jsonl --batch-size 32
+vast run --name proj steering_extension.steer.project --run-dir outputs/steering/runs/sweep_grant --vectors $V --keys E --layers <monitoring layer>
+vast run --name kl steering_extension.steer.kl_check --run-dir outputs/steering/runs/sweep_grant --vectors $V --settings E:8:0.05,E:8:0.1,...
+vast pull
+.venv/bin/python -m steering_extension.local.text_features --run-dir outputs/steering/runs/sweep_grant        # paper features + signature match
+.venv/bin/python -m steering_extension.local.analyze_layer_sweep --run-dir outputs/steering/runs/sweep_grant --monitor-layer <L> --arrival-key E
+```
+`analyze_layer_sweep.py` applies the two hurdles (mechanical coherence + KL; arrival |t| >= 2), finds the largest passing
+dose per layer, and ranks layers by signature match (correlation of standardised feature deltas with the paper's
+Qwen3.5-9B exhortation deltas from `data/processed/final_text_analysis_pair_deltas.csv.gz`).
+`text_features.py --paper-signature` prints the reference. Stage L3 (judge confirmation of the top layers) uses the
+Phase 2 commands below on grant items with the paper panel.
 
 ## Phase 2: steered vs baseline cells
 
