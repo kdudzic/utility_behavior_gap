@@ -69,6 +69,8 @@ def main() -> None:
     ap.add_argument("--n-tokens", type=int, default=32)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--model", default=os.environ.get("STEER_MODEL", "Qwen/Qwen3.5-9B"))
+    ap.add_argument("--shard", type=int, default=0, help="shard over settings")
+    ap.add_argument("--num-shards", type=int, default=1)
     args = ap.parse_args()
     jobs = {j["pair_uid"]: j for j in read_jsonl(args.run_dir / "generation_jobs.jsonl")}
     gens = [g for g in read_jsonl(args.run_dir / "generations.jsonl") if g["condition"] == "baseline" and g.get("output_text") and not g.get("alias_of")]
@@ -78,13 +80,14 @@ def main() -> None:
     tok = loaded.tokenizer
     p_ids = [chat_input_ids(loaded, jobs[g["pair_uid"]].get("system_prompt_b", ""), jobs[g["pair_uid"]]["prompt_b"]) for g in gens]
     r_ids = [tok(g["output_text"], add_special_tokens=False)["input_ids"][: args.n_tokens] for g in gens]
-    out_path = args.run_dir / "kl_check.jsonl"
+    out_path = args.run_dir / (f"kl_check.shard{args.shard}.jsonl" if args.num_shards > 1 else "kl_check.jsonl")
     # unsteered reference
     ref = []
     for i in range(0, len(gens), args.batch_size):
         lp, valid = logprobs_response(loaded, p_ids[i : i + args.batch_size], r_ids[i : i + args.batch_size], None, None)
         ref.append((lp.cpu(), valid.cpu()))
-    for spec in args.settings.split(","):
+    settings = [s for i, s in enumerate(args.settings.split(",")) if i % args.num_shards == args.shard]
+    for spec in settings:
         key, layer, r = spec.split(":")
         layer, r = int(layer), float(r)
         vec = tensors[f"{key}/layer{layer}"].float().to(loaded.device)
