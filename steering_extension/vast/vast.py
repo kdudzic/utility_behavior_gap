@@ -334,7 +334,7 @@ def cmd_down(a: argparse.Namespace) -> None:
             sys.exit("aborted")
     # The API can report success while the instance keeps running; retry and verify it is gone.
     for attempt in range(1, 6):
-        vastai("destroy", "instance", str(iid), raw=False, check=False)
+        vastai("destroy", "instance", str(iid), "--yes", raw=False, check=False)  # --yes: the CLI otherwise prompts and aborts silently
         time.sleep(20)
         if not instance_info(iid):
             STATE.rename(STATE_DIR / f"instance.{iid}.destroyed.json")
