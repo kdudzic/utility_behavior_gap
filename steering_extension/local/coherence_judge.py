@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 from utility_behavior_gap.openrouter import OpenRouterClient, response_text  # noqa: E402
+from steering_extension.local.keys import load_keys  # noqa: E402
 
 JUDGE = "anthropic/claude-haiku-4.5"
 PROMPT = """You are evaluating whether a model's response is coherent text, independent of its quality or correctness.
@@ -61,6 +62,7 @@ def main() -> None:
         keep = set(args.conditions.split(","))
         rows = [g for g in rows if g["condition"] in keep]
     print(f"{len(rows)} outputs to score", flush=True)
+    load_keys()
     client = OpenRouterClient()
     with out.open("a") as fh, ThreadPoolExecutor(args.workers) as ex:
         futs = {}

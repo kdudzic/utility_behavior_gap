@@ -11,7 +11,8 @@ import argparse
 import json
 from pathlib import Path
 
-from safetensors.torch import load_file
+import numpy as np
+from safetensors.numpy import load_file
 
 from steering_extension.local.common import ROOT, framed_neutral_prompt, make_job, task_items, write_manifest
 
@@ -49,7 +50,7 @@ def main() -> None:
             jobs.append(make_job(pair_uid=base_uid, comparison="steer_baseline", task_row=row, condition_a="baseline_rep", condition_b="baseline", prompt_a=neutral, prompt_b=neutral, repeat=rep, extra=extra))
             for c in cells:
                 rms = float(tensors[f"norm/layer{c['layer']}"][0])
-                vnorm = float(tensors[f"{c['key']}/layer{c['layer']}"].norm())
+                vnorm = float(np.linalg.norm(tensors[f"{c['key']}/layer{c['layer']}"].astype(np.float64)))
                 coef = c["r"] * rms / vnorm
                 cond = f"steer_{c['key']}_L{c['layer']}_r{c['r']:+.3f}_{c['mode']}"
                 uid = f"{cond}:essay:{row['item_index']}:r{rep}"

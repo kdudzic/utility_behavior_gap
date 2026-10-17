@@ -1,0 +1,18 @@
+Try getting the vectors in a different way:
+- assistent start token (tag token before the vert first token of the respons)
+- average over the tokens of the user prompt (skilled-non-skilled)
+
+Drop translation from vector isolation data
+
+Small experiments on Qwen etc., decisive ones on GLM-5.1 
+
+What should actually be the injection layer? Why was Qwen 16?
+
+Stay in touch with Chris regularly during the week 
+
+
+
+Eventually:
+- metacognitive tests; do the models know they are trying harder or not as hard?
+
+

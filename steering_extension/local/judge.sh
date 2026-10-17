@@ -5,5 +5,6 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 RUN_DIR="$1"; WORKERS="${2:-8}"
+source steering_extension/local/env.sh
 export PYTHONPATH="$PWD/src:$PWD:${PYTHONPATH:-}"
 .venv/bin/python src/utility_behavior_gap/scripts/run_judging.py --manifest "$RUN_DIR/generation_jobs.jsonl" --orders both --workers "$WORKERS"

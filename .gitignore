@@ -21,3 +21,6 @@ figures/*.svg
 
 # Local secrets (never commit)
 .openrouter.txt
+
+# SPAR credential files (never commit)
+steering_extension/spar_*.txt

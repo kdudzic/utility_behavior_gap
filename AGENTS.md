@@ -34,18 +34,20 @@
   reproduction path is touched by this work. All new outputs go to `outputs/steering/`
   (gitignored). Paper prompts are reused byte-for-byte via `steering_extension/local/common.py`;
   never edit the paper's prompt constants to suit the extension.
-- Compute: GPU generation runs as SLURM jobs on Athena (Cyfronet) via
-  `steering_extension/slurm/gpu_job.sbatch` (account `plgllmpsypath-gpu-a100`, partition
-  `plgrid-gpu-a100`, 40 GB A100s); `steering_extension/vast/run_gpu.sh` is the equivalent
-  for a plain GPU box. Keep both runners working. Weights and caches live under `$SCRATCH`.
+- Compute: since 2026-10-17 GPU generation runs on a rented vast.ai instance driven from the
+  laptop by `steering_extension/vast/vast.py` (`search/up/push/bootstrap/run/pull/down`; state in
+  `outputs/steering/vast/instance.json`). The account is the shared SPAR team account: never destroy
+  instances you did not create, and `down` yours when a session ends (billing runs until then).
+  `steering_extension/slurm/gpu_job.sbatch` is the Athena (Cyfronet) equivalent (account
+  `plgllmpsypath-gpu-a100`, partition `plgrid-gpu-a100`, 40 GB A100s); keep both runners working.
 - Environment: managed with `uv` (`steering_extension/remote/bootstrap.sh`); the steering
   extras are `steering_extension/requirements-remote.txt`. Qwen3.5 needs transformers main
   and the chat template flag `enable_thinking=False` to match the paper's `reasoning: none`.
 - Paid calls: judging reuses the paper's unchanged `run_judging.py` with the paper's
   three-judge panel; coherence scoring uses one judge. Both are OpenRouter calls and require
   the PI's explicit per-phase authorization (current authorization: Phases 0-2 of the
-  proposal, capped at $40 total). The key lives in `.env` / `.openrouter.txt` (gitignored);
-  never commit or print it.
+  proposal, capped at $40 total). Keys live in `steering_extension/spar_openrouter.txt`, `steering_extension/spar_vastai.txt`,
+  `.openrouter.txt` or `.env` (all gitignored); never commit or print them.
 - Scientific conventions carried over: temperature 1.0, per-task max_tokens (essay 900,
   grant 1400, translation 600, postmortem 3000), blank system prompt, both presentation
   orders, judge flips collapse to ties, panel ties excluded, exact-binomial CIs. Steering

@@ -294,6 +294,10 @@ outputs/steering/            gitignored: generations, votes, vectors (.safetenso
 
 ### 9.2 Remote side
 
+Update 2026-10-17: the pilot (Phases 0-2) ran on Athena/SLURM while vast.ai was unavailable; from
+2026-10-17 GPU work runs on vast.ai as planned here, via `steering_extension/vast/vast.py`. The 9B runs on
+one 40 GB A100 (about $0.4-0.6/h); 80 GB class or two GPUs for the 27B. See `README.md` for the workflow.
+
 - **Instance.** vast.ai on-demand, 1× H100 80 GB (A100 80 GB acceptable), verified host,
   direct SSH, 200 GB disk, PyTorch CUDA image. Provisioned per working session and destroyed
   after results are pulled; vectors and generations are synced to the laptop continuously so
