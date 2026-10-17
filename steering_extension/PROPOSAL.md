@@ -3,6 +3,14 @@
 Status: DRAFT v1 for PI review (2026-10-10). Nothing here has been run. Decisions already
 taken with the PI are marked **[decided]**; items still open are marked **[open]**.
 
+Decision log (after v1):
+- 2026-10-10 review (PI, Chris): try assistant-start-token and user-prompt-mean readouts for vectors;
+  justify the injection layer (see `docs/layer_selection.md`); metacognitive tests later.
+- 2026-10-17 (PI): translation is excluded from the extension everywhere. Extraction uses grant +
+  postmortem; evaluation uses essay; every "4 tasks" below reads as 3. No GLM-5.1 work and no credit
+  top-up until the PI has discussed both with Chris.
+- 2026-10-17: Section 4 step 6 (layer selection) is superseded by `docs/layer_selection.md` Stages L1-L3.
+
 Parent paper: Zhou & Ackerman, *When Preferences Fail to Become Incentives* (arXiv 2606.22974v2).
 Parent repo: this repository. The extension lives entirely under `steering_extension/` and
 `outputs/steering/`; it does not modify `CURRENT_PAPER/`, `paper_reproduction/`, or the

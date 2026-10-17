@@ -51,7 +51,7 @@
   `steering_extension/spar_*.txt`, `.openrouter.txt`, `.env` as fallbacks; never commit or print them.
   `python -m steering_extension.local.keys --check` audits this; a pre-commit hook blocks key material.
 - Scientific conventions carried over: temperature 1.0, per-task max_tokens (essay 900,
-  grant 1400, translation 600, postmortem 3000), blank system prompt, both presentation
+  grant 1400, postmortem 3000; translation is excluded from the extension since 2026-10-17), blank system prompt, both presentation
   orders, judge flips collapse to ties, panel ties excluded, exact-binomial CIs. Steering
   doses are reported as fractions of the layer's RMS residual norm, never raw coefficients.
   Dose, layer, position-mode, and vector-recipe changes are scientific choices: discuss first.

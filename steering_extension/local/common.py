@@ -23,7 +23,9 @@ from utility_behavior_gap.prompts import (  # noqa: E402
 
 STEER_RUNS = ROOT / "outputs" / "steering" / "runs"
 LOCAL_ACTOR = "qwen3.5-9b-or"  # paper actor id; model field records the local HF backend
-MAX_TOKENS = {"essay": 900, "grant_proposal_abstract": 1400, "translation": 600, "incident_postmortem": 3000}
+# Translation is excluded from the extension (PI decision 2026-10-17); only these three tasks are used.
+MAX_TOKENS = {"essay": 900, "grant_proposal_abstract": 1400, "incident_postmortem": 3000}
+TASKS = tuple(MAX_TOKENS)
 
 
 def task_items(task: str | None = None) -> list[dict[str, str]]:
@@ -35,6 +37,8 @@ def task_items(task: str | None = None) -> list[dict[str, str]]:
         per_task_index[r["task"]] = idx + 1
         r = dict(r)
         r["item_index"] = str(idx)
+        if r["task"] not in MAX_TOKENS:
+            continue  # translation excluded
         if task is None or r["task"] == task:
             out.append(r)
     return out

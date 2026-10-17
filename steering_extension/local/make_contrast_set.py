@@ -1,6 +1,7 @@
 """Build extraction contrast prompts (held out from the essay evaluation items).
+Translation is excluded from all extension work (PI decision 2026-10-17): extraction uses grant and postmortem only.
 
-E     : exhortation present (pos) vs absent (neg), framed-neutral wrapper, non-essay tasks.
+E     : exhortation present (pos) vs absent (neg), framed-neutral wrapper, grant + postmortem tasks.
 R_id  : world-class role (pos) vs skilled role (neg), same wrapper, non-essay tasks.
 R_act : "act as / pretend you are" world-class persona (pos) vs the direct world-class cue (neg).
 Each item is repeated --repeats times so several sampled responses enter the means.
@@ -16,19 +17,20 @@ from utility_behavior_gap.prompts import USER_ROLE_STRONG_INSTRUCTIONS
 
 ACT_AS = {
     "grant_proposal_abstract": "For this task, pretend you are a world-class grant writer and act as that person would.",
-    "translation": "For this task, pretend you are a world-class translator and act as that person would.",
     "incident_postmortem": "For this task, pretend you are a world-class site reliability engineer and act as that person would.",
 }
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tasks", default="grant_proposal_abstract,translation,incident_postmortem")
+    ap.add_argument("--tasks", default="grant_proposal_abstract,incident_postmortem")
     ap.add_argument("--items-per-task", type=int, default=14)
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--contrasts", default="E,R_id")
     ap.add_argument("--out", type=Path, default=ROOT / "outputs" / "steering" / "contrasts" / "contrasts.jsonl")
     args = ap.parse_args()
+    if "translation" in args.tasks:
+        ap.error("translation is excluded from the steering extension (PI decision 2026-10-17)")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     rows = []
     for task in args.tasks.split(","):
