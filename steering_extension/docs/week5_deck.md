@@ -1,75 +1,71 @@
 ---
 title: "SPAR Week 5 Progress Report"
-subtitle: "Effort direction in Qwen3.5-9B: new readouts, layer choice, essay rerun"
+subtitle: "Effort direction in Qwen3.5-9B: new vectors & layer choice exploration"
 author: "Kacper"
 date: "2026-10-17"
 ---
 
 ## Personal updates
+- Was at a conference this week: Models of Consciousness 7 in Copenhagen. Had limited capacity. Next 2 weeks free. Want to do larger-scale experiments
+- Need more vast.ai credits
+- For now still ran all experiments on small 9B Qwen. Needed to compare the vector extraction methods
+- Bigger-scale experiments with, e.g., GLM-5.1 require WAY more compute (like 8xH100), but a good chance of interesting findings
 
--
-
-## This week in one line
+## This week's takeaways
 
 **New vector is weak everywhere. Old vector is strong somewhere.**
 
 - Old vector (response-token average), layer 16, essays: remove it, essays lose **2 / 32**; add a little, essays win **28 / 14** pooled (p = 0.04)
 - New vector (assistant-start token), best layer 18, essays: **nothing significant at any of 7 doses**; 63-80% ties
 - Random directions: nothing, everywhere
-- Layer 16 was a guess last week. Now tested: it sits inside a plateau (layers 8-16 all work for removal). Not special, not wrong
+- Layer 16 was an educated guess last week (middle of 32 layers, matched with other paper average). Now tested: it sits inside a plateau (layers 8-16 all work for removal) 
 
-## What changed since last week
+## This week's changes
 
 - Translation dropped from everything (vectors now from grant + postmortem only, essays held out for testing)
 - Two new ways to read out the vector tried, as suggested: assistant-start token, average over user-prompt tokens
-- Layer chosen by a written procedure instead of a prior
-- Infrastructure moved to vast.ai (Athena login closed). One command rents, runs, pulls, destroys
+- Optimal injection layer chosen by an empirical procedure
+- Infrastructure moved to vast.ai
 
 ## Three readouts, one contrast
 
-Same prompts (max-effort vs neutral), same model, same 120 responses per side. Only *where* we read the hidden state differs.
+Used same prompts (max-effort vs neutral), same model, same 120 responses per side; altered only the hidden state readout position
 
-| readout | taken from | built twice, same direction? (split-half cos, L16) |
-|---|---|---|
-| response average (old) | mean over the model's own answer tokens | **-0.17** (noise dominates) |
-| assistant-start token (new) | last prompt token, right before the model starts writing | **0.97** |
-| user-prompt average (new) | mean over the user's prompt tokens | **0.99** |
+| readout | taken from |
+|---|---|
+| model resp. avg | mean over the model's own answer tokens |
+| assistant-start token (new) | last prompt token, right before the model starts writing |
+| user-prompt avg (new) | mean over the user's prompt tokens |
 
-- The two new readouts look perfect on paper. Partly by construction: the two prompts differ in text, so "was there an exhortation" is easy to read off the prompt
-- Cosine between old and assistant-start direction: 0.15-0.29. They are different directions
-
-## User-prompt average: dropped early
+## User-prompt average vector
 
 - Steered grant abstracts at 11 layers, 2 doses, 30 items each
-- Moved the text the **wrong way** at every layer: fewer rare words, more positive words, the opposite of what the real exhortation does (feature-signature correlation -0.1 to -0.6)
-- Reason: this direction is mostly the words of the exhortation sentence itself, not a state of the model
-- Not carried to the essay test
+- Moved the text the wrong way at every layer: fewer rare words, more positive words, the opposite of what the real exhortation does
+- Possible reason: this direction is mostly the words of the exhortation sentence itself, not a state of the model
+- Dropped; not carried to the essay test
 
-## Assistant-start token vector: where it comes from
+## Assistant-start token vector
 
 - Chat template ends with `<|im_start|>assistant` and a newline. The vector is read at that last token
 - It is the model's state after reading the whole prompt and just before writing word one
-- Deterministic given the prompt: no sampling noise, hence the 0.97 reliability
-- Natural size of the exhortation shift at layer 16: **0.12** of the residual norm (old readout: 0.014). Nine times larger, so doses went up to 0.2
 
-## Layer procedure (pre-registered, written before running)
+## Layer exploration procedure (Claude-assisted)
 
 1. **Reliability profile** per layer, free from extraction data: which layers have a stable direction
 2. **Judge-free sweep** on grant (not essays, to keep essays clean): 11 layers x 6 doses x 30 items. Hurdles: fluency intact, KL to the unsteered model < 0.1, steered text re-read still points along the direction. Rank passing layers by how well the feature changes match the paper's exhortation effect
 3. **Judge check**: top 3 layers + layer 16, paper's 3-judge panel, 30 grant pairs each
 4. **Essay dose curve** at the winner, same design as last week
 
-## Layer procedure: what happened
+## Layer exploration results
 
 - Step 1: layers 14-24 pass for the new vector; 8-12 fail the "text still points along the direction" hurdle
 - Step 2: feature match picked **layer 24** (0.86), layer 22 close (0.88), layer 18 third (0.79)
 - Step 3: judges disagreed. **Layer 18** won 8 / 1 on grant; layers 22 and 24 were null or lost. Rule said: judges override. Layer 18 chosen
-- Replication of step 2 on postmortems: no signal at all. Feature-matching shortcut retired
 - Lesson: late layers change surface statistics without changing what judges value
 
 ## Essay rerun: new vector at layer 18
 
-Same design as last week: 30 items x 2 repeats, steered vs unsteered, paper judges.
+Same design as last week: 30 items x 2 repeats, steered vs unsteered, paper judges
 
 | dose | W / L | win rate | ties |
 |---|---|---|---|
@@ -86,7 +82,7 @@ Same design as last week: 30 items x 2 repeats, steered vs unsteered, paper judg
 
 ## Essay rerun: old vector, rebuilt from scratch
 
-Old recipe, but new data (no translation, 120 responses per side instead of 180). Layer 16.
+Old recipe, but new data (no translation, 120 responses per side instead of 180). Layer 16
 
 | dose | W / L | win rate | p |
 |---|---|---|---|
@@ -95,8 +91,9 @@ Old recipe, but new data (no translation, 120 responses per side instead of 180)
 
 - Last week's curve again, from an independent build
 - Pooled over the two runs, +0.05 is 27 / 11 (p = 0.014): first real sign that adding the direction helps
+- Possibly lack of translation data helps?
 
-## Old vector: layer profile (the question from last week)
+## Old vector: layer profile (Claude-assisted)
 
 Old vector, essays, 60 pairs per cell, 5 layers.
 
@@ -110,8 +107,7 @@ Old vector, essays, 60 pairs per cell, 5 layers.
 | random @16 | 0.48 | 0.35 |
 
 - Removal hurts across layers 8-16, fades after 20. Layer 16 is inside the plateau
-- Adding helps only weakly; layer 16 +0.05 pooled over all three runs (last week + two today): 39 / 20 (0.66). Real, not stable run to run
-- Fluency 85-90 in every cell, length within 17 words
+- Adding helps only weakly; layer 16 +0.05 pooled over all three runs (last week + two today): 39 / 20 (0.66)
 
 ## Old vs new vector, side by side
 
@@ -123,8 +119,8 @@ Old vector, essays, 60 pairs per cell, 5 layers.
 | adding it helps essays? | weakly (0.67-0.76 at +0.05) | no |
 | random direction does the same? | no | no |
 
-- Reliability of the whole vector was the wrong filter. The old vector is mostly noise, but its shared part drives behaviour
-- The state after *reading* the instruction is not the state that *does* the work. The effect lives in the response
+- The old vector is mostly noise, but its shared part drives behavior
+- The state after *reading* the instruction is not the state that *does* the work. Effect probably lives in the response?
 
 ## What it means
 
@@ -136,7 +132,5 @@ Old vector, essays, 60 pairs per cell, 5 layers.
 
 ## Next
 
-- Rebuild the old vector with more data (300+ per side) and noise cleaning; the response readout is the right one, it just needs n
-- Role vectors: only reliable in the prompt readout, which we now know is weak for steering. Need the response readout at larger n before any test
-- Ablation arm (project the direction out under the real max-effort prompt): still not run, still cheap
-- Spend this week: about $3 GPU, about $25 judging. Vast credit low; GLM-5.1 on hold pending Chris
+- Rebuild the old vector with more data (300+ per side) and noise cleaning; response readout might be the right one; need larger N
+- Role vectors: only reliable in the prompt readout, which we now know is weak for steering; need larger N 
