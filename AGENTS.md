@@ -55,5 +55,11 @@
   orders, judge flips collapse to ties, panel ties excluded, exact-binomial CIs. Steering
   doses are reported as fractions of the layer's RMS residual norm, never raw coefficients.
   Dose, layer, position-mode, and vector-recipe changes are scientific choices: discuss first.
+- Session-context sync (PI's machines only): if this project's Claude Code session directory is a git
+  repo for the PI's private context repo, `steering_extension/local/context_sync.sh` keeps it in sync, run by
+  the hooks in `.claude/settings.json` (start: check; after each turn and at exit: commit + push, key scan
+  first, never force). If the session-start check reports that the remote is ahead, stop and tell the user
+  to quit, `git pull` in the session directory, and resume; never run one conversation on two machines at once.
+  Failures are logged to `~/.cache/claude-context-sync.log`; check it if asked about sync state.
 - Phase gating: the proposal's phases run in order; Phase 4 (full grid) and beyond need a
   fresh go from the PI after the Phase 3 review.
