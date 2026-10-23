@@ -25,7 +25,6 @@
 
 ## Steering-vector extension (`steering_extension/`, added 2026-10-10)
 
-
 - Scope: mechanistic extension of the paper testing whether effort-exhortation (E) and
   role (R_id, R_act) steering vectors reproduce the paper's effort and role effects on
   Qwen3.5-9B (and later 27B). Design, decisions, and phase plan live in
