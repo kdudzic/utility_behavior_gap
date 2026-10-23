@@ -25,10 +25,6 @@
 
 ## Steering-vector extension (`steering_extension/`, added 2026-10-10)
 
-- **Start here:** read `steering_extension/HANDOFF.md` before doing anything in `steering_extension/`.
-  It holds the current state, results, open decisions, and the PI's working preferences, and replaces
-  conversation history across machines. At the end of every working session, update its session log
-  and any changed section, then commit and push. Keep it free of keys, account details, and personal data.
 
 - Scope: mechanistic extension of the paper testing whether effort-exhortation (E) and
   role (R_id, R_act) steering vectors reproduce the paper's effort and role effects on

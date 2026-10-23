@@ -1,7 +1,5 @@
 # Steering-vector extension: how to run
 
-Current state and next steps: `HANDOFF.md` (read first).
-
 Design and decisions: `PROPOSAL.md`. Pilot results: `docs/mini_pilot_report.md`. Rules: repo `AGENTS.md`
 (steering section). All outputs land in `outputs/steering/` (gitignored). Paths below are relative to the
 repo root. Since 2026-10-17 GPU work runs on vast.ai; the laptop builds jobs, drives the instance, judges
