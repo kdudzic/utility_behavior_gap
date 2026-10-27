@@ -135,7 +135,7 @@ unsteered samples) as the null comparison; steered cells alias the baseline samp
   neutral), with a random-direction control and an effort-vs-neutral bridge cell.
 - `extract.py` now also stores `tail2..tail6` (the 2nd..6th token from the end of the prompt) and `gen1` (first
   generated token) readouts; `vectors_report.json["prompt_tail_tokens"]` says which template token each one is.
-- `local/week6_cells.sh` builds all week-6 manifests; results and figures in `docs/week6_results.md`
+- `local/week6_cells.sh` builds all week-6 manifests; results and figures in `docs/week6_results.md`, deck in `docs/week6_deck.md`
   (tables under `docs/results/2026-10-27_w6_sweep/` and `docs/results/2026-10-27_w6_small/`).
 
 ## Athena (SLURM) runner, kept for reference
