@@ -27,7 +27,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from utility_behavior_gap.judging import derive_judge_verdict, derive_panel_winner_condition  # noqa: E402
 from steering_extension.local.analyze_cells import clopper_pearson  # noqa: E402
 
-CELL_RE = re.compile(r"^steer_(?P<key>.+)_L(?P<layer>\d+)_r(?P<r>[+-]\d+\.\d+)_(?P<mode>\w+)$")
+CELL_RE = re.compile(r"^steer_(?P<key>.+)_L(?P<layer>[\d+]+)_r(?P<r>[+-]\d+\.\d+)_(?P<mode>\w+)$")  # layer may be 12+16+20 (multi-layer)
 
 
 def load(p: Path) -> list[dict]:
@@ -61,7 +61,7 @@ def main() -> None:
         allv = [w for jm in jms for w in by_pj[(uid, jm)]]
         pair_rows.append({
             "pair_uid": uid, "cell": cell, "item": job.get("item_index", ""), "repeat": job.get("repeat", ""),
-            "key": m["key"] if m else "baseline", "layer": int(m["layer"]) if m else -1, "r": float(m["r"]) if m else 0.0,
+            "key": m["key"] if m else "baseline", "layer": m["layer"] if m else "-1", "layer0": int(m["layer"].split("+")[0]) if m else -1, "mode": m["mode"] if m else "", "r": float(m["r"]) if m else 0.0,
             "outcome": "W" if panel == job["condition_a"] else "L" if panel == job["condition_b"] else "T",
             "votes_w": sum(w == job["condition_a"] for w in allv), "votes_l": sum(w == job["condition_b"] for w in allv), "votes_n": len(allv),
             "words_a": len(gens.get(f"{uid}::a", {}).get("output_text", "").split()), "words_b": len(gens.get(f"{uid}::b", {}).get("output_text", "").split()),
@@ -78,9 +78,9 @@ def main() -> None:
         from scipy.stats import binomtest
         p = binomtest(int(w), int(n), 0.5).pvalue if n else np.nan
         vw, vl = g.votes_w.sum(), g.votes_l.sum()
-        rows.append({"cell": cell, "key": g.key.iloc[0], "layer": g.layer.iloc[0], "r": g.r.iloc[0], "pairs": len(g), "W": w, "L": l, "T": t, "win_rate": w / n if n else np.nan, "ci_lo": lo, "ci_hi": hi, "p": p,
+        rows.append({"cell": cell, "key": g.key.iloc[0], "layer": g.layer.iloc[0], "layer0": g.layer0.iloc[0], "mode": g["mode"].iloc[0], "r": g.r.iloc[0], "pairs": len(g), "W": w, "L": l, "T": t, "win_rate": w / n if n else np.nan, "ci_lo": lo, "ci_hi": hi, "p": p,
                      "allvote_rate": vw / (vw + vl) if vw + vl else np.nan, "allvote_n": int(vw + vl), "words_a": g.words_a.mean(), "words_b": g.words_b.mean(), "coh_a": g.coh_a.mean(), "coh_pass80_a": (g.coh_a >= 80).mean() if g.coh_a.notna().any() else np.nan, "trunc_a": int(g.trunc_a.sum())})
-    T = pd.DataFrame(rows).sort_values(["key", "layer", "r"])
+    T = pd.DataFrame(rows).sort_values(["key", "layer0", "layer", "mode", "r"])
     pd.set_option("display.width", 250)
     print("== per-cell (paper conventions) + all-vote rate")
     print(T[["cell", "pairs", "W", "L", "T", "win_rate", "ci_lo", "ci_hi", "p", "allvote_rate", "words_a", "words_b", "coh_a", "coh_pass80_a", "trunc_a"]].round(3).to_string(index=False))
@@ -90,7 +90,7 @@ def main() -> None:
         import statsmodels.api as sm
         import statsmodels.formula.api as smf
         print("\n== logistic regression: P(steered wins | resolved) ~ r, item-clustered SE")
-        for (key, layer), g in P[(P.key != "baseline")].groupby(["key", "layer"]):
+        for (key, layer, mode), g in P[(P.key != "baseline")].groupby(["key", "layer", "mode"]):
             res = g[g.outcome != "T"].copy()
             if res.r.nunique() < 3 or len(res) < 20:
                 continue
@@ -100,9 +100,9 @@ def main() -> None:
                     continue
                 try:
                     fit = smf.glm("win ~ r", data=sub, family=sm.families.Binomial()).fit(cov_type="cluster", cov_kwds={"groups": sub["item"].astype(str)})
-                    print(f"  {key} L{layer} [{label}] n={len(sub)} slope={fit.params['r']:.2f} se={fit.bse['r']:.2f} p={fit.pvalues['r']:.2g}")
+                    print(f"  {key} L{layer} {mode} [{label}] n={len(sub)} slope={fit.params['r']:.2f} se={fit.bse['r']:.2f} p={fit.pvalues['r']:.2g}")
                 except Exception as e:  # noqa: BLE001
-                    print(f"  {key} L{layer} [{label}] fit failed: {e}")
+                    print(f"  {key} L{layer} {mode} [{label}] fit failed: {e}")
     except ImportError:
         print("statsmodels missing: regression skipped")
     # 3. Fisher: E cells vs pooled random at same signed r
