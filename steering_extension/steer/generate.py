@@ -3,7 +3,9 @@ optional per-side steering.
 
 Each job may carry `steering_a` / `steering_b` blocks:
     {"vector": "<path.safetensors>", "key": "E", "layer": 16, "coef": 12.5, "mode": "response"}
-    {"ablate": "<path.safetensors>", "key": "E"}            # directional ablation, all layers
+    {"vector": ..., "key": "E", "layers": [12, 16, 20], "coefs": [c12, c16, c20], "mode": "response"}  # multi-layer
+    {"ablate": "<path.safetensors>", "key": "E"}                    # per-layer directional ablation, every layer
+    {"ablate": "<path.safetensors>", "key": "E", "layers": [8, ..]} # ablation restricted to these layers
     null / missing                                           # unsteered
 A side may also carry `alias_a` / `alias_b`: an output_id already in the generations file whose
 text is copied (shared baseline across dose cells).
@@ -72,7 +74,9 @@ def steering_group_key(st: dict | None) -> tuple:
     if not st:
         return ("none",)
     if "ablate" in st:
-        return ("ablate", st["ablate"], st.get("key", "E"))
+        return ("ablate", st["ablate"], st.get("key", "E"), tuple(st.get("layers") or ()))
+    if "layers" in st:
+        return ("add", st["vector"], st.get("key", "E"), tuple(int(l) for l in st["layers"]), st.get("mode", "response"))
     return ("add", st["vector"], st.get("key", "E"), int(st["layer"]), st.get("mode", "response"))
 
 
@@ -207,16 +211,24 @@ def main() -> None:
             batch = group[i : i + args.batch_size]
             hook = None
             layer_idx = None
-            if gkey[0] == "add":
+            if gkey[0] == "add" and isinstance(gkey[3], tuple):
+                _, path, key, layers_, mode = gkey
+                hook = {}
+                for j, layer in enumerate(layers_):
+                    vec = load_vector(path, key, layer, loaded.device)
+                    coefs = torch.tensor([float(r["steering"]["coefs"][j]) for r in batch], device=loaded.device)
+                    hook[layer] = AdditiveSteer(vec, coefs, mode)
+                layer_idx = None
+            elif gkey[0] == "add":
                 _, path, key, layer, mode = gkey
                 vec = load_vector(path, key, layer, loaded.device)
                 coefs = torch.tensor([float(r["steering"]["coef"]) for r in batch], device=loaded.device)
                 hook = AdditiveSteer(vec, coefs, mode)
                 layer_idx = layer
             elif gkey[0] == "ablate":
-                _, path, key = gkey
-                vec = load_vector(path, key, None, loaded.device)
-                hook = DirectionalAblation(vec)
+                _, path, key, layers_ = gkey
+                target = list(layers_) if layers_ else list(range(loaded.num_layers))
+                hook = {l: DirectionalAblation(load_vector(path, key, l, loaded.device)) for l in target}
                 layer_idx = None
             t0 = time.time()
             gens = generate_batch(loaded, batch, temperature=args.temperature, max_tokens=max_tokens, hook=hook, layer_idx=layer_idx)

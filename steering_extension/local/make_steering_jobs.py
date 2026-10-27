@@ -18,10 +18,15 @@ from steering_extension.local.common import ROOT, framed_neutral_prompt, make_jo
 
 
 def parse_cell(spec: str) -> dict:
+    """KEY:LAYER:R[:MODE]; LAYER may be several layers joined by '+', e.g. E:12+16+20:0.05 (the dose r is
+    split evenly across the layers, each relative to its own RMS). MODE: response (default) | all | prompt."""
     parts = spec.split(":")
-    key, layer, r = parts[0], int(parts[1]), float(parts[2])
+    key, r = parts[0], float(parts[2])
+    layers = [int(x) for x in parts[1].split("+")]
     mode = parts[3] if len(parts) > 3 else "response"
-    return {"key": key, "layer": layer, "r": r, "mode": mode}
+    if mode not in {"response", "all", "prompt"}:
+        raise ValueError(f"bad mode {mode} in {spec}")
+    return {"key": key, "layers": layers, "r": r, "mode": mode}
 
 
 def main() -> None:
@@ -53,12 +58,19 @@ def main() -> None:
             # baseline cell: two independent unsteered samples (null comparison; a is the "second" sample)
             jobs.append(make_job(pair_uid=base_uid, comparison="steer_baseline", task_row=row, condition_a="baseline_rep", condition_b="baseline", prompt_a=neutral, prompt_b=neutral, repeat=rep, extra=extra))
             for c in cells:
-                rms = float(tensors[f"norm/layer{c['layer']}"][0])
-                vnorm = float(np.linalg.norm(tensors[f"{c['key']}/layer{c['layer']}"].astype(np.float64)))
-                coef = c["r"] * rms / vnorm
-                cond = f"steer_{c['key']}_L{c['layer']}_r{c['r']:+.3f}_{c['mode']}"
+                per_layer = c["r"] / len(c["layers"])
+                coefs, rmss, vnorms = [], [], []
+                for L in c["layers"]:
+                    rms = float(tensors[f"norm/layer{L}"][0])
+                    vnorm = float(np.linalg.norm(tensors[f"{c['key']}/layer{L}"].astype(np.float64)))
+                    coefs.append(per_layer * rms / vnorm); rmss.append(rms); vnorms.append(vnorm)
+                lname = "+".join(str(L) for L in c["layers"])
+                cond = f"steer_{c['key']}_L{lname}_r{c['r']:+.3f}_{c['mode']}"
                 uid = f"{cond}:{task}:{row['item_index']}:r{rep}"
-                steer = {"vector": vec_rel, "key": c["key"], "layer": c["layer"], "coef": coef, "mode": c["mode"], "r": c["r"], "rms_norm": rms, "vector_norm": vnorm}
+                if len(c["layers"]) == 1:
+                    steer = {"vector": vec_rel, "key": c["key"], "layer": c["layers"][0], "coef": coefs[0], "mode": c["mode"], "r": c["r"], "rms_norm": rmss[0], "vector_norm": vnorms[0]}
+                else:
+                    steer = {"vector": vec_rel, "key": c["key"], "layers": c["layers"], "coefs": coefs, "mode": c["mode"], "r": c["r"], "r_per_layer": per_layer, "rms_norm": rmss, "vector_norm": vnorms}
                 ex = {"steering_a": steer, "steering_b": None, "alias_b": f"{base_uid}::b", "cell": cond}
                 if args.max_tokens:
                     ex["max_tokens"] = args.max_tokens

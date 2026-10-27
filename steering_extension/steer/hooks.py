@@ -5,7 +5,12 @@ Additive steering: h <- h + c_i * v at one layer, where c_i is a per-sample coef
   * "response": applied only to generated tokens (decode steps, seq_len == 1), never to the
     prompt prefill; this is the proposal's default.
   * "all": applied to every position including the prompt.
-Directional ablation: h <- h - (h . r_hat) r_hat at every layer and all positions (Arditi et al.).
+  * "prompt": applied only during the prompt prefill (pre-generation); generated tokens are untouched
+    except through the KV cache / recurrent state built from the steered prefill.
+Multi-layer steering: `steering()` accepts {layer_idx: hook} so several layers get their own vector
+and coefficients in one forward pass (Persona Vectors style; the dose is split across layers by the caller).
+Directional ablation: h <- h - (h . r_hat) r_hat at block outputs, all positions (Arditi et al.); with
+per-layer directions, each layer removes its own direction.
 """
 from __future__ import annotations
 
@@ -30,7 +35,7 @@ def _join_output(hidden, rest):
 
 class AdditiveSteer:
     def __init__(self, vector: torch.Tensor, coefs: torch.Tensor, mode: str = "response") -> None:
-        if mode not in {"response", "all"}:
+        if mode not in {"response", "all", "prompt"}:
             raise ValueError(mode)
         self.vector = vector  # (d,)
         self.coefs = coefs  # (batch,)
@@ -42,6 +47,9 @@ class AdditiveSteer:
         seq_len = hidden.shape[1]
         if self.mode == "response" and seq_len > 1:
             # prompt prefill: leave untouched
+            return output
+        if self.mode == "prompt" and seq_len == 1:
+            # decode step: leave untouched
             return output
         delta = self.coefs.to(hidden.dtype)[:, None, None] * self.vector.to(hidden.dtype)[None, None, :]
         return _join_output(hidden + delta, rest)
@@ -63,8 +71,13 @@ class DirectionalAblation:
 
 @contextmanager
 def steering(layers: nn.ModuleList, layer_idx: int | None, hook) -> Iterator[None]:
+    """hook may be a single callable (applied at layer_idx, or at every layer when layer_idx is None)
+    or a dict {layer_idx: callable} for per-layer hooks."""
     handles = []
-    if hook is not None:
+    if isinstance(hook, dict):
+        for idx, h in hook.items():
+            handles.append(layers[idx].register_forward_hook(h))
+    elif hook is not None:
         if layer_idx is None:
             for layer in layers:
                 handles.append(layer.register_forward_hook(hook))

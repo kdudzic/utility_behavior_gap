@@ -7,6 +7,10 @@ and record, at every decoder-block output:
   * astart : residual at the last prompt token (the assistant-start position, whose output predicts
              the first response token; deterministic given the prompt)
   * pmean  : mean residual over the prompt tokens (user prompt incl. chat template; deterministic)
+  * tailK  : residual at the K-th token from the end of the prompt, K = 2..TAIL_K (astart is K = 1);
+             which template token each K is (newline, <|im_start|>, "assistant", </think>, ...) is listed in
+             vectors_report.json["prompt_tail_tokens"] so the readouts can be named after the fact
+  * gen1   : residual at the first generated token (sampled; the first position that is "in the answer")
 Per-response readouts are stored (fp16) so the merge step can compute split-half reliability and
 held-out projection AUC per layer and readout (layer_profile.csv), as well as the vectors.
 
@@ -31,7 +35,8 @@ from steering_extension.steer.generate import append_jsonl, read_jsonl
 from steering_extension.steer.hooks import ResidualCapture
 from steering_extension.steer.model import chat_input_ids, load_model, strip_think
 
-READOUTS = ("rmean", "astart", "pmean")
+TAIL_K = 6
+READOUTS = ("rmean", "astart", "pmean", *[f"tail{k}" for k in range(2, TAIL_K + 1)], "gen1")
 
 
 @torch.inference_mode()
@@ -54,6 +59,13 @@ def respond_and_capture(loaded, rows: list[dict], *, max_new_tokens: int, temper
     m_pmean = torch.cat([prompt_mask.float(), torch.zeros_like(resp_mask, dtype=torch.float)], dim=1)
     backbone = getattr(loaded.model, "model", loaded.model)
     masks = {"rmean": m_resp, "astart": m_astart, "pmean": m_pmean}
+    for k in range(2, TAIL_K + 1):
+        m = torch.zeros_like(full_mask, dtype=torch.float)
+        m[:, prompt_len - k] = 1.0
+        masks[f"tail{k}"] = m
+    m_gen1 = torch.zeros_like(full_mask, dtype=torch.float)
+    m_gen1[:, prompt_len] = resp_mask[:, 0].float()
+    masks["gen1"] = m_gen1
     with ResidualCapture(loaded.layers) as cap:
         cap.masks = masks
         backbone(input_ids=out, attention_mask=full_mask.long())
@@ -98,9 +110,13 @@ def main() -> None:
     sq_all: list[torch.Tensor] = []
     n_tok_all: list[torch.Tensor] = []
     meta_rows: list[dict] = []
+    tail_tokens = None
     for i in range(0, len(rows), args.batch_size):
         batch = rows[i : i + args.batch_size]
         readouts, sq, n_resp, texts = respond_and_capture(loaded, batch, max_new_tokens=args.max_new_tokens, temperature=args.temperature)
+        if tail_tokens is None:
+            ids0 = chat_input_ids(loaded, batch[0].get("system_prompt", ""), batch[0]["prompt"])
+            tail_tokens = {f"tail{k}" if k > 1 else "astart": loaded.tokenizer.decode([ids0[-k]]) for k in range(1, TAIL_K + 1)}
         for k in READOUTS:
             per_resp[k].append(readouts[k].to(torch.float16))  # (L, b, d)
         sq_all.append(sq)
@@ -113,7 +129,7 @@ def main() -> None:
     tensors["sq_norm_sum"] = torch.cat(sq_all, dim=1).contiguous()  # (L, N)
     tensors["n_resp_tokens"] = torch.cat(n_tok_all, dim=0).contiguous()  # (N,)
     save_file(tensors, str(args.out_dir / f"perresp.shard{args.shard}.safetensors"))
-    (args.out_dir / f"perresp.shard{args.shard}.json").write_text(json.dumps(meta_rows))
+    (args.out_dir / f"perresp.shard{args.shard}.json").write_text(json.dumps({"rows": meta_rows, "prompt_tail_tokens": tail_tokens}))
     print("done")
 
 
@@ -136,7 +152,11 @@ def merge(args) -> None:
         t = load_file(str(p))
         for k in data:
             data[k].append(t[k])
-        meta.extend(json.loads(p.with_suffix(".json").read_text()))
+        mj = json.loads(p.with_suffix(".json").read_text())
+        if isinstance(mj, dict):
+            meta.extend(mj["rows"]); tail_tokens = mj.get("prompt_tail_tokens")
+        else:
+            meta.extend(mj); tail_tokens = None
     X = {k: torch.cat(data[k], dim=1).float() for k in READOUTS}  # (L, N, d)
     sq = torch.cat(data["sq_norm_sum"], dim=1).float()  # (L, N)
     ntok = torch.cat(data["n_resp_tokens"], dim=0).float()  # (N,)
@@ -147,7 +167,7 @@ def merge(args) -> None:
     ref = idx[(contrasts[0], "neg")]
     rms = torch.sqrt(sq[:, ref].sum(dim=1) / ntok[ref].sum())  # (L,)
     out: dict[str, torch.Tensor] = {f"norm/layer{l}": rms[l].reshape(1) for l in range(L)}
-    report: dict = {"n_responses": N, "contrasts": {}, "rms_norm_by_layer": [round(float(x), 3) for x in rms], "readouts": list(READOUTS)}
+    report: dict = {"n_responses": N, "contrasts": {}, "rms_norm_by_layer": [round(float(x), 3) for x in rms], "readouts": list(READOUTS), "prompt_tail_tokens": tail_tokens}
     gen = torch.Generator().manual_seed(args.seed)
     profile_rows: list[dict] = []
     for c in contrasts:

@@ -125,6 +125,17 @@ Cell spec `KEY:LAYER:R[:MODE]`; `R` is the signed dose as a fraction of the laye
 `MODE` is `response` (default) or `all`. Each manifest includes a `steer_baseline` cell (two independent
 unsteered samples) as the null comparison; steered cells alias the baseline sample `b`.
 
+## Week 6 additions (2026-10-27)
+
+- Cell spec extensions for `make_steering_jobs.py`: `KEY:12+16+20:R` injects at several layers with the dose split
+  evenly (each layer relative to its own RMS); `MODE` may be `response` (generated tokens only, default), `all`
+  (prompt + generated) or `prompt` (prefill only, pre-generation).
+- `make_ablation_jobs.py --vectors $V --run-name abl --keys E,rand0 [--layers 8,10,12]`: necessity arm. Projects the
+  direction out at every block output under the real max-effort prompt, against untouched max-effort (and against
+  neutral), with a random-direction control and an effort-vs-neutral bridge cell.
+- `extract.py` now also stores `tail2..tail6` (the 2nd..6th token from the end of the prompt) and `gen1` (first
+  generated token) readouts; `vectors_report.json["prompt_tail_tokens"]` says which template token each one is.
+
 ## Athena (SLURM) runner, kept for reference
 
 ```bash
