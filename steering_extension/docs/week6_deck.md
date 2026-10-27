@@ -5,9 +5,16 @@ author: "Kacper"
 date: "2026-10-27"
 ---
 
-## Personal updates
+## Goals for this week (from the week-6 plan)
 
-- (fill in)
+1. Full dose-response sweep of the "old" vector on the 9B model: the whole signed dose grid, not just -0.1 and +0.05, at every second layer.
+2. Generate more extraction data and use it.
+3. Test injection at several layers at once.
+4. Remove the exhortation vector completely while using the exhortation prompt.
+5. Try other tokens near the start of the answer as the readout for the pre-response vector (newline, end of assistant tag).
+6. Check where we inject: generated tokens only (current), prompt tokens only, and both.
+
+All six were run this week.
 
 ## Setup: how to read every number in this deck
 
