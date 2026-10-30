@@ -28,6 +28,7 @@ def main() -> None:
     ap.add_argument("--keys", default="E,rand0", help="directions to ablate; the first is the test direction, the rest controls")
     ap.add_argument("--layers", default=None, help="comma list; default every layer")
     ap.add_argument("--cells", default="vs_effort,vs_neutral,bridge", help="which cell families to include")
+    ap.add_argument("--neutral-all-keys", action="store_true", help="run the vs_neutral cell for every key, not only the first (random-direction control for the necessity test)")
     args = ap.parse_args()
     vec_rel = str(args.vectors.resolve().relative_to(ROOT)) if args.vectors.resolve().is_relative_to(ROOT) else str(args.vectors.resolve())
     layers = [int(x) for x in args.layers.split(",")] if args.layers else None
@@ -46,7 +47,7 @@ def main() -> None:
                     uid = f"{cond}_vs_effort:{task}:{row['item_index']}:r{rep}"
                     jobs.append(make_job(pair_uid=uid, comparison="ablate_vs_effort", task_row=row, condition_a=cond, condition_b="effort", prompt_a=eff, prompt_b=eff, repeat=rep,
                                          extra={"steering_a": abl, "steering_b": None, "cell": f"{cond}_vs_effort"}))
-                if "vs_neutral" in fams and key == keys[0]:
+                if "vs_neutral" in fams and (key == keys[0] or args.neutral_all_keys):
                     uid = f"{cond}_vs_neutral:{task}:{row['item_index']}:r{rep}"
                     jobs.append(make_job(pair_uid=uid, comparison="ablate_vs_neutral", task_row=row, condition_a=cond, condition_b="neutral", prompt_a=eff, prompt_b=neu, repeat=rep,
                                          extra={"steering_a": abl, "steering_b": None, "cell": f"{cond}_vs_neutral"}))

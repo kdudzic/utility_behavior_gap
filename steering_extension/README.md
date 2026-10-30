@@ -136,6 +136,15 @@ unsteered samples) as the null comparison; steered cells alias the baseline samp
 - `extract.py` now also stores `tail2..tail6` (the 2nd..6th token from the end of the prompt) and `gen1` (first
   generated token) readouts; `vectors_report.json["prompt_tail_tokens"]` says which template token each one is.
 - `local/week6_cells.sh` builds all week-6 manifests; results and figures in `docs/week6_results.md`, deck in `docs/week6_deck.md`
+
+## Week 7 additions (2026-10-30)
+
+- `docs/experiments_explainer.md`: every steering experiment so far, one table row each, with values and results.
+- `docs/week7_offline.md`: qualitative reading of ablated and steered essays, coherence across all forms, the paper's
+  text features on the week-6 runs.
+- `local/make_role_jobs.py`: steering and ablation under the paper's role-cue prompts (world-class / skilled), with a
+  world-class-vs-skilled bridge; `make_ablation_jobs.py --neutral-all-keys` adds the random-direction control to the
+  vs-neutral necessity cell. `local/week7_cells.sh` builds the week-7 manifests and the essay extraction prompts.
   (tables under `docs/results/2026-10-27_w6_sweep/` and `docs/results/2026-10-27_w6_small/`).
 
 ## Athena (SLURM) runner, kept for reference
