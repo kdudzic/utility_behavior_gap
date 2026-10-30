@@ -8,7 +8,9 @@
 # Writes outputs/steering/logs/w7_all.done at the end; a failed step stops the chain (set -e) and leaves no marker.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
-export STEER_USE_KERNELS=1 HF_HOME="${HF_HOME:-/workspace/.hf_cache}" NUM_SHARDS=1 GPUS_PER_SHARD=1
+# STEER_USE_KERNELS=0 since 2026-10-30: the hub kernel kernels-community/fla (revision 24d8640) fails to import under transformers
+# 5.23.dev ("key contains names that are not kernel arguments: BT"); the torch fallback is ~25% slower but needs no hub kernel.
+export STEER_USE_KERNELS=0 HF_HOME="${HF_HOME:-/workspace/.hf_cache}" NUM_SHARDS=1 GPUS_PER_SHARD=1
 mkdir -p outputs/steering/logs
 L=outputs/steering/logs
 
