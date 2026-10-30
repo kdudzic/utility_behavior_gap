@@ -9,5 +9,5 @@ pandas>=1.5
 PyYAML>=6
 requests>=2.31
 python-dotenv>=1.0
-kernels>=0.17
+kernels>=0.17,<0.18  # transformers main (5.23.dev) rejects 0.18: "0.17.2 <= version < 0.18.0" (2026-10-30)
 flash-linear-attention>=0.5
