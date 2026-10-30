@@ -1,6 +1,6 @@
 # Every steering experiment so far, in order
 
-Last updated 2026-10-30 (week 7, before the week-7 GPU batch). One entry per experiment: what was done, with
+Last updated 2026-10-30 (week 7, after the GPU batch). One entry per experiment: what was done, with
 what values, on what, and what came out. Detailed tables live in the per-week documents linked in each entry.
 Numbers are win rates of the steered (or ablated) side with wins / losses in brackets, panel ties excluded.
 
@@ -67,22 +67,26 @@ v4 vectors: same recipe as v3 with 30 items x 2 tasks x 5 repeats = 300 response
 | 4.2 | coherence across all forms | holds for removal at -0.05/-0.1 (89, slightly above baseline), addition at <= +0.05, random, multi-layer, positions, readouts; drops for addition at >= +0.075 from layer 16 on (81 to 84), removal at -0.2 (83 to 86), local ablation (82), all-layer ablation (2) |
 | 4.3 | paper text features | our exhortation prompt reproduces the paper's feature signature (r = 0.96); early-layer addition reproduces most of it (r = 0.4 to 0.5: longer, more sentences, more rare words and semicolons, fewer positive words) but with shorter, simpler sentences; removal flattens vocabulary rather than mirroring the exhortation (r about 0); local ablation keeps the "more" and breaks the sentences |
 
-## 5. Week 7 GPU batch (planned, `week7_plan.txt`)
+## 5. Week 7 GPU batch (2026-10-30): controls, transfer, role cues, necessity, `week7_results.md`
 
-| # | experiment | values | question |
+| # | experiment | values | result |
 | --- | --- | --- | --- |
-| 5.1 | random controls on the sweep grid | rand0, rand1 at layers 6, 10, 14, 20 x r -0.1, +0.05, +0.1; 1,440 pairs | are the early-layer results direction-specific? |
-| 5.2 | cross-validation | vector built from 300 essay responses per arm, tested on grant at layers 6, 10, 16 x r -0.1, +0.05, +0.1, rand0 at 10; 720 pairs | does the direction transfer across tasks? |
-| 5.3 | role cues | world-class and skilled prompts; E ablated at layers 8 to 16, E added at layer 6 +0.1, each vs the untouched role essay; world-class vs skilled bridge; 300 pairs | does the direction act under a role cue instead of the exhortation? |
-| 5.4 | clean necessity test | max-effort prompt, E or rand0 ablated at layers 8 to 16, vs the neutral-prompt essay; 120 pairs | once the direction is gone, does the exhortation still help? |
+| 5.1 | random controls on the sweep grid | rand0, rand1 at layers 6, 10, 14, 20 x r -0.1, +0.05, +0.1; 1,440 pairs | random directions lose 0.36 pooled (0.32 to 0.40 by dose) with coherence intact: the null for steering cells is about 0.35, not 0.5. Effort vector beats matched random at every early-layer positive cell (layer 6 +0.1: 22/3 vs 16/25, p = 0.0001; layer 14 +0.05: 17/4 vs 9/26) and at removal for layers 10 and 14 (2/29 vs 13/27; 3/37 vs 16/14), not at layers 6 and 20 |
+| 5.2 | cross-validation | vector built from 300 essay responses per arm (cosine 0.6 to 0.7 with v4), tested on grant at layers 6, 10, 16 x r -0.1, +0.05, +0.1; rand0 at 10; 780 pairs | transfers: removal 1/40, 2/46, 0/49; addition at +0.05 0.68, 0.67, 0.76; +0.1 too much at layers 10 and 16; random 0.40 to 0.59 |
+| 5.3 | role cues | world-class and skilled prompts; E ablated at layers 8 to 16, E added at layer 6 +0.1, vs the untouched role essay; bridge; 300 pairs | ablation hurts under both (3/31, 6/27); addition helps under skilled (17/5, 0.77) but not under world-class (11/13); world-class vs skilled 8/6 |
+| 5.4 | clean necessity test | max-effort prompt, E or rand0 ablated at layers 8 to 16, vs the neutral-prompt essay; 120 pairs | E ablated: 7/19 (0.27, p = 0.03), the exhortation no longer helps; rand0 ablated: 12/8 (0.60), advantage intact; coherence 82 vs 89 |
 
-## 6. Standing answers to the hypotheses
+## 6. Standing answers to the hypotheses (after week 7)
 
-- H2, removing the direction cancels the effect: supported at 10 of 12 layers with a full dose curve; under the
-  exhortation prompt the local ablation loses 3/17 but with a coherence cost, and the clean version (vs neutral)
-  is item 5.4.
-- H1, adding the direction reproduces the effect: supported at layers 6 to 14 (best 22/3 at layer 6, +0.1), with
-  most of the exhortation's text signature; fails from layer 16 on; random controls at those layers are item 5.1.
-- H3, random directions do nothing: supported at layer 16 (6 cells); other layers are item 5.1.
-- Not yet shown: transfer to another task (5.2), effect under a role cue (5.3), a length control, anything on
-  the 27B model.
+- H2, removing the direction cancels the effect: supported. Full dose curve at 12 layers (week 6); against
+  matched random controls the effort-specific removal is clear at layers 10 to 16 and on grant at all layers
+  tested, not at layers 6 and 20 where random directions lose almost as much. Under the exhortation prompt,
+  ablating the direction (layers 8 to 16) drops the essay below the neutral one (7/19) while a random ablation
+  leaves the exhortation's advantage (12/8); the ablated essays lose 5 to 9 coherence points.
+- H1, adding the direction reproduces the effect: supported at layers 6 to 14 against matched random controls,
+  transfers from an essay-built vector to grant, and works under the weak role cue; adds nothing under the strong
+  role cue; fails from layer 16 on at r >= +0.075.
+- H3, random directions do nothing: not quite. Random directions at |r| 0.05 to 0.1 cost about 15 points of win
+  rate with coherence intact. Specificity claims are made against the matched random cell.
+- Not yet shown: a length control for the positive effect, an ablation without coherence cost, a dose curve under
+  the world-class prompt, anything on the 27B model.

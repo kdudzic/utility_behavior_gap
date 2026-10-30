@@ -142,6 +142,8 @@ unsteered samples) as the null comparison; steered cells alias the baseline samp
 - `docs/experiments_explainer.md`: every steering experiment so far, one table row each, with values and results.
 - `docs/week7_offline.md`: qualitative reading of ablated and steered essays, coherence across all forms, the paper's
   text features on the week-6 runs.
+- `docs/week7_results.md`: random controls across the sweep grid, essay-to-grant cross-validation, role-cue cells, the clean
+  necessity test; `local/week7_crossval.sh` and `vast/w7_chain.sh` build and run the batch.
 - `local/make_role_jobs.py`: steering and ablation under the paper's role-cue prompts (world-class / skilled), with a
   world-class-vs-skilled bridge; `make_ablation_jobs.py --neutral-all-keys` adds the random-direction control to the
   vs-neutral necessity cell. `local/week7_cells.sh` builds the week-7 manifests and the essay extraction prompts.
