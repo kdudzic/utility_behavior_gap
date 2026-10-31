@@ -41,45 +41,78 @@ rare words. No coherence or glitch cost.
 
 ## 2. Coherence under every steering form (item 2)
 
-Mean coherence of the intervened essays; unsteered essays in the same runs score 87.5 to 89.0.
+Mean coherence of the steered essays in the week-6 sweep, by dose and layer band (share at or above 80 in
+brackets). Unsteered essays in the same run: 87.5 and 88.7 (0.85). The layer split is at 16 because that is where
+the sweep's positive effect turned down.
 
-| form | cells | coherence | share at or above 80 |
-| --- | --- | --- | --- |
-| remove, r = -0.05 and -0.1, all layers | 24 | 89.2 | 0.88 |
-| remove, r = -0.2 | 12 | 86.9 | 0.82 |
-| add, r = +0.025 and +0.05 | 24 | 87.2 | 0.80 |
-| add, r = +0.075 and +0.1, layers 6 to 14 | 10 | 86.1 | 0.75 |
-| add, r = +0.075 and +0.1, layers 16 to 28 | 14 | 84.7 | 0.71 |
-| random directions (weeks 6 and 7) | 28 | 88.0 | 0.84 |
-| multi-layer, position modes, other readouts | 23 | 87.5 | 0.82 |
-| direction ablated at layers 8 to 16 (any prompt) | 3 | 81.1 | 0.58 |
-| direction ablated at all 32 layers | 1 | 2.4 | 0.00 |
+| dose r | layers 6 to 14 | layers 16 to 28 |
+| --- | --- | --- |
+| -0.2 | 84.8 (0.77) | 88.4 (0.85) |
+| -0.1 | 89.0 (0.89) | 89.6 (0.89) |
+| -0.05 | 89.1 (0.86) | 88.7 (0.85) |
+| +0.025 | 87.4 (0.82) | 87.4 (0.80) |
+| +0.05 | 87.5 (0.81) | 86.5 (0.75) |
+| +0.075 | 86.3 (0.77) | 85.2 (0.73) |
+| +0.1 | 86.0 (0.74) | 84.2 (0.69) |
 
-Coherence drops for addition at high dose from layer 16 on, for removal at -0.2, and for ablation. It holds
-everywhere else. It is 1 to 2 points above unsteered for removal at -0.1, inside the spread between unsteered
-cells: plainer text, which the coherence judge likes and the quality judges do not.
+Other forms: random directions 88.0 to 88.6 at every dose (0.84 to 0.86); multi-layer, position modes and other
+readouts 86.8 to 87.8; direction ablated at layers 8 to 16 under any prompt 80 to 82 (0.52 to 0.63); ablated at
+all 32 layers 2.4.
+
+Coherence falls with positive dose, more so in the late layers, and at -0.2 in the early layers. It is at or
+slightly above unsteered (by 1 to 2 points) for removal at -0.05 and -0.1, inside the spread between unsteered
+cells; this is the plainer text of section 1. Ablation is the only form that costs more than 4 points.
 
 ## 3. The paper's text features on our outputs (item 3)
 
-The paper's 14 text features (its own code), per-pair standardised deltas, correlated with the paper's own
-exhortation deltas for Qwen3.5-9B essays. Its utility measures need new model calls and are not computed.
+Besides the judge win rate, the paper measures text features of every output and reports how they shift under
+each prompt contrast. The 14 features, computed here with the paper's own code: words; sentences; words per
+sentence; MATTR (moving-average type-token ratio, lexical diversity); unique-word ratio; mean word length;
+rare-word rate per 1,000 words (words below a wordfreq Zipf-frequency threshold); numeric specificity per 1,000
+(numbers, percentages, currency); semicolons and colons per 1,000; dashes per 1,000; positive and negative
+sentiment words per 1,000 (VADER lexicon); Flesch-Kincaid grade; paragraphs. The paper's other metric family,
+the utility measures, needs new model calls and is not computed.
 
-| cell | r with paper exhortation signature |
+For each cell, the value is the paired difference (intervened minus unsteered essay, same topic) divided by the
+standard deviation of that difference over the 60 pairs, so +1.0 means the intervention moved the feature up by
+one standard deviation. The first column is the paper's own direct-exhortation deltas for Qwen3.5-9B essays.
+
+| feature | paper exhortation | our max-effort vs neutral prompt | add layer 6, +0.1 | remove layer 16, -0.1 | ablate 8 to 16 under max-effort |
+| --- | --- | --- | --- | --- | --- |
+| words | +0.46 | +0.54 | +0.66 | +0.12 | -0.10 |
+| sentences | +0.20 | +0.26 | +1.20 | +0.20 | +0.81 |
+| words per sentence | +0.16 | +0.11 | -0.61 | -0.16 | -0.99 |
+| rare-word rate | +0.20 | +0.30 | +0.52 | -1.18 | +0.61 |
+| semicolons and colons | +0.23 | +0.42 | +0.63 | -0.70 | +1.20 |
+| unique-word ratio | -0.19 | -0.30 | +0.22 | -1.06 | -0.09 |
+| MATTR | -0.27 | -0.32 | -0.10 | -0.20 | -1.00 |
+| positive-sentiment words | -0.14 | -0.21 | -0.30 | +0.49 | -0.63 |
+| negative-sentiment words | -0.04 | +0.01 | +0.10 | -0.35 | +0.43 |
+| Flesch-Kincaid grade | +0.04 | 0.00 | -0.80 | -0.28 | -1.55 |
+| mean word length | -0.20 | -0.11 | -0.32 | -0.03 | -1.37 |
+| numeric specificity | -0.01 | -0.05 | +0.10 | -0.18 | +0.27 |
+| dashes | +0.12 | +0.12 | +0.21 | -0.38 | +0.20 |
+| paragraphs | 0.00 | -0.08 | +0.17 | +0.13 | +0.26 |
+
+Pearson correlation across the 14 features between a cell's column and the paper's exhortation column (all cells
+in `feature_deltas_key_cells_w6.csv`):
+
+| cell | correlation with the paper's exhortation column |
 | --- | --- |
-| max-effort vs neutral prompt, our pipeline, no steering | +0.96 |
+| our max-effort vs neutral prompt, no steering | +0.96 |
 | add at layer 6 / 10 / 14 (+0.1, +0.1, +0.05) | +0.51 / +0.38 / +0.40 |
-| add at layer 6, +0.1, under skilled / world-class prompt | +0.59 / +0.49 |
+| add at layer 6, +0.1, under the skilled / world-class prompt | +0.59 / +0.49 |
 | remove at layer 16 / 10, -0.1 | -0.03 / -0.43 |
 | remove at layer 16, -0.1, prompt tokens only | -0.74 |
 | max-effort prompt, direction ablated at 8 to 16 | +0.47 |
 | max-effort prompt, random direction ablated | +0.60 to +0.90 |
-| random direction, layer 16, -0.1 | -0.04 |
+| random direction at layer 16, -0.1 | -0.04 |
 
 Our pipeline reproduces the paper's signature (longer, more sentences, more rare words and semicolons, fewer
 positive-sentiment words). Adding the vector early moves the same features the same way, and also shortens and
-simplifies sentences (grade -0.5 to -0.8), which the prompt does not. Removing the vector is not the mirror image:
-length unchanged, rare words -1.2 SD, semicolons -0.7, positive words +0.5. Ablation under the exhortation keeps
-the "more" (rare words +0.6, semicolons +1.2) and breaks the sentences (words per sentence -1.0, grade -1.6).
+simplifies sentences (grade -0.8), which the prompt does not. Removing the vector is not the mirror image: length
+unchanged, rare words -1.2, semicolons -0.7, positive words +0.5. Ablation under the exhortation keeps the "more"
+(rare words +0.6, semicolons +1.2) and breaks the sentences (words per sentence -1.0, grade -1.6).
 
 ## 4. Random controls (item 5)
 
@@ -128,7 +161,25 @@ same item.
 | random direction | 10 | 0.40 (8/12) | 0.50 (8/8) | 0.59 (10/7) | 89 / 88 / 87 |
 
 The direction transfers: removal loses almost every pair with coherence intact, addition at +0.05 wins 0.67 to
-0.76, +0.1 is already too much at layers 10 and 16. Same shape as on essays.
+0.76, +0.1 is already too much at layers 10 and 16.
+
+Is it as strong as the original vector on essays? Side by side at the same layers and doses:
+
+| layer | dose | week-6 vector on essays | essay-built vector on grant |
+| --- | --- | --- | --- |
+| 6 | -0.1 | 0.19 (7/30) | 0.02 (1/40) |
+| 10 | -0.1 | 0.06 (2/29) | 0.04 (2/46) |
+| 16 | -0.1 | 0.12 (5/37) | 0.00 (0/49) |
+| 6 | +0.05 | 0.62 (15/9) | 0.68 (15/7) |
+| 10 | +0.05 | 0.67 (12/6) | 0.67 (14/7) |
+| 16 | +0.05 | 0.60 (15/10) | 0.76 (13/4) |
+| 6 | +0.1 | 0.88 (22/3) | 0.54 (13/11) |
+| 10 | +0.1 | 0.82 (18/4) | 0.33 (9/18) |
+| 16 | +0.1 | 0.23 (7/23) | 0.17 (5/25) |
+
+Removal is stronger on grant, addition at +0.05 is the same, addition at +0.1 is weaker: the positive peak sits
+at a lower dose on grant. Two things differ at once here, the vector and the task, so this does not say which one
+moves the peak. The clean comparison, the week-6 vector on grant, was not run.
 
 ## 6. Role cues (item 7)
 
