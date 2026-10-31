@@ -9,42 +9,38 @@ date: "2026-10-31"
 
 1. Qualitative study: what changes in the text when the effort direction is removed at layers 8 to 16, and why coherence stays high while the score drops.
 2. Coherence under every form of steering tried so far.
-3. The paper's other metrics (its text features) applied to our steered and ablated outputs.
-4. Random-direction controls across the sweep grid, not only at layer 16.
+3. The paper's other metrics (text features) applied to the steered and ablated outputs.
+4. Random-direction control effects over a wider layer sweep.
 5. Cross-validation: build the vector from essays, test it on another task (grant).
 6. Ablate and add the vector under the paper's role-cue prompts ("world-class", "skilled").
-7. The clean necessity test: ablated exhortation essay against a neutral essay.
-8. One explainer document listing every experiment so far (`docs/experiments_explainer.md`).
+7. Do exhortation prompts work through the effort direction? Check through ablations.
 
-## How to read every number
+## Claude explainer for some things
 
 - Every number is a pairwise comparison. For each topic the model writes one essay with the intervention and one without, from the same prompt. The paper's three judges pick the better one. Win rate = share of resolved pairs the intervened essay won. 0.50 means no effect. There is no absolute score.
-- 60 pairs per cell. "Unsteered vs unsteered" rows pair two unsteered essays from the same prompt and should sit near 0.50.
-- "Random direction" rows apply the same dose with a random vector of the same size. They show how much comes from perturbing the model at all.
 - Coherence is a separate judge's 0 to 100 score for readable, on-topic text, given for both essays. Unsteered essays score 87 to 89.
-- The vector is the effort direction: average hidden state while answering the max-effort prompt minus the neutral prompt. Dose r is the vector's size as a fraction of the hidden state's size at that layer; r < 0 removes the direction. Ablation projects the direction out at the listed layers. Qwen3.5-9B, 32 layers.
+- The vector is the effort direction: average hidden state while answering the max-effort prompt minus the neutral prompt. Dose r is the vector's size as a fraction of the hidden state's size at that layer; r < 0 removes the direction. Ablation projects the direction out at the listed layers.
 
 ## Takeaways
 
-- Removing the direction makes essays bland, not broken. Ablating it under the exhortation makes them overwrought, with invented statistics and 13% broken tokens, at coherence 82.
-- Random directions are not harmless. They lose 0.36 of pairs with coherence intact. The null for a steering cell is about 0.35, not 0.50.
-- Against that null, adding the direction at layers 6 to 14 is still a clear win (22 / 3 against 16 / 25 for random at layer 6). Removal is direction-specific at layers 10 to 16, not at 6 and 20.
-- A vector built from essays steers grant abstracts: removal 0 / 49 at layer 16, addition at +0.05 wins 0.76.
-- Under the paper's role prompts, ablation hurts as much as under the exhortation. Adding helps under "skilled" (17 / 5) but not under "world-class" (11 / 13).
-- With the direction ablated, the exhortation no longer beats the neutral prompt (7 / 19). With a random direction ablated, it still does (12 / 8).
+- **Removing the direction makes the essays bland, but not broken.** Ablating it under the exhortation makes them overblown, with invented statistics and 13% broken tokens, at coherence 82.
+- **Random directions are not harmless.** They lose 0.36 of pairs with coherence intact. The null for a steering cell is about 0.35, not 0.50.
+- **A vector built from essays steers grant abstracts.** Removal 0 / 49 at layer 16, addition at +0.05 wins 0.76.
+- **Under the paper's role prompts, ablation hurts as much as under the exhortation. Adding helps under "skilled" (17 / 5) but not under "world-class" (11 / 13).**
+- **With the direction ablated, the exhortation no longer beats the neutral prompt (7 / 19). With a random direction ablated, it still does (12 / 8).**
 
 ## What the texts look like
 
 Max-effort prompt, direction ablated at layers 8 to 16, against the untouched max-effort essay (3 / 17). Four changes:
 
-- Purple register: "these funds are the CD4 count of our democracy" (coherence 72), "a world burning with data" (62).
+- Too fanciful: "these funds are the CD4 count of our democracy" (coherence 72), "a world burning with data" (62).
 - Invented specifics: "a turnout of ninety-eight percent", "12 million voices in Canberra".
 - Broken tokens in fluent text: "theregarul routine", "the沉默 is the exception". 13% of ablated essays, 5% of untouched.
 - More, shorter sentences at the same length.
 
-Coherence stays at 82 because the text is readable and on topic. The quality judges see overwrought style and fake detail next to a sober twin. Of 60 ablated essays, two read as damaged (45, 62); the rest read as a worse writer.
+Coherence stays at 82 because the text is readable and on topic. The quality judges see overblown style and fake detail next to a plain, clean twin. Of 60 ablated essays, two read as damaged (45, 62); the rest read as a worse writer.
 
-Removing the direction by steering (neutral prompt, layer 16, r = -0.1; 5 / 37) looks different: textbook essays, "First, Secondly, Thirdly", no title, fewer cases and numbers. Both essays in a typical pair score 92 on coherence; the judges take the twin 3 to 0.
+Removing the direction by steering (neutral prompt, layer 16, r = -0.1; 5 / 37) gives a different text. These are textbook essays, "First, Secondly, Thirdly", no title, fewer cases and numbers. Both essays in a typical pair score 92 on coherence; the judges take the twin 3 to 0.
 
 ## Coherence by dose and layer
 
@@ -61,11 +57,11 @@ Mean coherence of steered essays in the week-6 sweep (share at or above 80 in br
 | +0.1 | 86.0 (0.74) | 84.2 (0.69) |
 
 - Random directions: 88.0 to 88.6 at every dose. Direction ablated at layers 8 to 16, any prompt: 80 to 82. Ablated at all 32 layers: 2.4.
-- Coherence falls with positive dose, more in the late layers. Removal at -0.05 and -0.1 sits 1 to 2 points above unsteered: plainer text.
+- Coherence falls with positive dose, more in the late layers. Removal at -0.05 and -0.1 sits 1 to 2 points above unsteered, which fits the plainer text.
 
 ## The paper's text features on our outputs
 
-The paper measures 14 text features of every output (length, sentences, rare words, semicolons, sentiment words, readability, and so on). Same code here. Values: paired difference (intervened minus unsteered) in standard deviations.
+The paper measures 14 text features of every output (length, sentences, rare words, semicolons, sentiment words, readability, and so on). Same code here. How to read a value: for each topic, take the feature in the intervened essay minus the feature in the unsteered essay; average these differences over the 60 pairs and divide by their spread. So +1.0 means the intervention raised the feature by one standard deviation of the topic-to-topic variation; 0 means no change. The last row is the correlation of each column with the paper's column over all 14 features.
 
 | feature | paper's exhortation | our exhortation prompt | add layer 6, +0.1 | remove layer 16, -0.1 | ablate 8 to 16 under exhortation |
 |---|---|---|---|---|---|
@@ -78,12 +74,14 @@ The paper measures 14 text features of every output (length, sentences, rare wor
 | Flesch-Kincaid grade | +0.04 | 0.00 | -0.80 | -0.28 | -1.55 |
 | correlation with paper's column | 1 | +0.96 | +0.51 | -0.03 | +0.47 |
 
-- Our pipeline reproduces the paper's signature. Adding the vector early moves the same features the same way, plus shorter and simpler sentences.
-- Removing is not the mirror image: length unchanged, vocabulary flattened. Ablation keeps the "more" and breaks the sentences.
+- Our max-effort prompt moves the same features in the same direction as the paper's did (0.96).
+- Adding the vector at layer 6 moves them the same way as the prompt: longer, more sentences, more rare words and semicolons, fewer positive words. It also makes sentences shorter and simpler, which the prompt does not.
+- Removing the vector does not reverse the prompt's pattern. Length stays, rare words and semicolons drop, positive words rise (correlation -0.03).
+- Ablation keeps rare words and semicolons high and cuts sentence length and reading grade hard.
 
 ## Random controls across the grid
 
-Neutral prompt. Random directions at layers 6, 10, 14, 20 and r = -0.1, +0.05, +0.1, each against the unsteered essay from the same topic.
+Neutral prompt. Random directions at layers 6, 10, 14, 20 and r = -0.1, +0.05, +0.1. Each is compared against the unsteered essay from the same topic.
 
 | steered with | W / L | win rate | coherence steered / unsteered |
 |---|---|---|---|
@@ -92,7 +90,7 @@ Neutral prompt. Random directions at layers 6, 10, 14, 20 and r = -0.1, +0.05, +
 | random, r = +0.05, 8 cells pooled | 41 / 86 | 0.32 | 88.0 / 89.0 |
 | random, r = +0.1, 8 cells pooled | 58 / 87 | 0.40 | 88.2 / 89.0 |
 
-Effort vector (week 6) against random at the same layer and dose:
+Effort vector (week 6) against the random one at the same layer and dose:
 
 | layer | r | effort | random | p |
 |---|---|---|---|---|
@@ -103,6 +101,10 @@ Effort vector (week 6) against random at the same layer and dose:
 | 14 | -0.1 | 0.07 (3/37) | 0.53 (16/14) | 0.00003 |
 | 6 | -0.1 | 0.19 (7/30) | 0.30 (12/28) | 0.30 |
 | 20 | -0.1 | 0.22 (7/25) | 0.26 (8/23) | 0.77 |
+
+- Random directions lose 0.36 of pairs with coherence unchanged. Any perturbation of this size costs the essay something. The null for a steering cell is about 0.35.
+- The unsteered-vs-unsteered cell here is 5 / 15. The seven such cells over all runs are 11/10, 10/7, 11/13, 10/7, 8/10, 5/15, 16/7 (pooled 71 / 69); this one is the low end of chance.
+- Adding the effort vector beats random at every early-layer cell where it won. Removing it beats random at layers 10 and 14; at layers 6 and 20 random loses almost as much.
 
 ## Cross-validation: essay-built vector on grant
 
@@ -133,9 +135,9 @@ The paper's role prompts, "You are a world-class essayist" and "You are a skille
 | neutral (week 6) | added at layer 6, +0.1 | untouched neutral | 22 / 3 | 0.88 | 89 / 89 |
 
 - Ablation hurts under both role prompts as much as under the exhortation. The model uses this direction whenever it writes a competent essay.
-- Adding helps under the weak cue and not under the strong one. One reading: "world-class" already pushes along this direction. One dose per prompt only.
+- Adding helps under the weak cue and not under the strong one. Possibly "world-class" already pushes the model along this direction. One dose per prompt only.
 
-## Clean necessity test
+## Does exhortation work through the effort direction?
 
 Max-effort prompt with the direction ablated at layers 8 to 16, against the neutral-prompt essay with nothing removed. Does the exhortation still help once the direction is gone?
 
@@ -146,4 +148,19 @@ Max-effort prompt with the direction ablated at layers 8 to 16, against the neut
 | nothing (week 6) | 14 / 7 | 0.67 | 86 / 89 |
 
 - With the direction removed, the exhortation no longer helps. With a random direction removed, it keeps its advantage. The ablated essays lose 5 coherence points, so part of the drop is writing damage.
-- Where the hypotheses stand: adding reproduces the effect and beats matched random controls, transfers to grant, works under the weak role cue (H1). Removing cancels it, specific to the direction at layers 10 to 16 and under the exhortation prompt (H2). Random directions are not neutral, so the matched random cell is the null (H3 revised).
+
+## Where the hypotheses stand
+
+The proposal treats the effort vector as a candidate mediator of the exhortation effect and tests three things.
+
+**H1, sufficiency.** Adding the direction, with no exhortation in the prompt, reproduces the exhortation's effect on judged quality, and the effect grows with dose.
+
+- New this week: the early-layer wins beat matched random controls (22 / 3 vs 16 / 25 at layer 6). A vector built from essays works on grant (0.76 at +0.05). It works under the weak role cue (17 / 5), not under the strong one (11 / 13). It moves the paper's text features the way the prompt does, plus shorter sentences.
+
+**H2, necessity.** Removing the direction while the exhortation is in the prompt cancels the exhortation's effect.
+
+- New this week: with the direction ablated, the exhortation essay falls below the neutral one (7 / 19); with a random direction ablated, it still wins (12 / 8). Steering removal is direction-specific at layers 10 to 16, not at 6 and 20. Ablation costs 5 to 9 coherence points, so part of the drop is damage.
+
+**H3, specificity.** Random directions of the same size do not produce the effect; only a signed dose-response counts as the concept.
+
+- New this week: random directions are not neutral. They lose 0.36 of pairs with coherence intact. Specificity has to be judged against the matched random cell, not against 0.50. The signed dose-response and the early-layer gap to random hold under that comparison.
