@@ -8,7 +8,7 @@ left as pandoc made them.
 
 Usage (python-pptx is not in the project venv; run it ephemerally):
   ~/bin/md2pptx steering_extension/docs/week7_deck.md
-  uv run --with python-pptx python3 steering_extension/local/pptx_fit.py steering_extension/docs/week7_deck.pptx steering_extension/docs/week7_deck.pptx
+  uv run --no-project --with python-pptx python3 steering_extension/local/pptx_fit.py steering_extension/docs/week7_deck.pptx steering_extension/docs/week7_deck.pptx
 """
 import sys, copy
 from pptx import Presentation
