@@ -144,7 +144,9 @@ unsteered samples) as the null comparison; steered cells alias the baseline samp
   forms, the paper's text features on our outputs, random controls across the sweep grid, essay-to-grant
   cross-validation, role-cue cells, the clean necessity test. `local/week7_crossval.sh` and `vast/w7_chain.sh` build and
   run the GPU batch.
-- `docs/week7_deck.md`: the week-7 deck (10 slides, `~/bin/md2pptx`).
+- `docs/week7_deck.md`: the week-7 deck. Build with `~/bin/md2pptx`, then `uv run --with python-pptx python3
+  steering_extension/local/pptx_fit.py deck.pptx deck.pptx` to merge pandoc's split table slides back to one slide per
+  heading and fit the tables.
 - `local/make_role_jobs.py`: steering and ablation under the paper's role-cue prompts (world-class / skilled), with a
   world-class-vs-skilled bridge; `make_ablation_jobs.py --neutral-all-keys` adds the random-direction control to the
   vs-neutral necessity cell. `local/week7_cells.sh` builds the week-7 manifests and the essay extraction prompts.
