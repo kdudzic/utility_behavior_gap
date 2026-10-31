@@ -59,7 +59,7 @@ v4 vectors: same recipe as v3 with 30 items x 2 tasks x 5 repeats = 300 response
 | 3.4 | other pre-response readouts, layer 16 | assistant-start, `</think>`, newline after it, `<think>`, newline before it, `assistant`, first generated token; r +/-0.1 | all at 0.26 to 0.65, none significant |
 | 3.5 | ablation under the max-effort prompt | E at all 32 layers; rand0 at all 32; E at layers 8 to 16; vs untouched max-effort and vs neutral | all-layer E ablation breaks the model (0/60, coherence 2); random ablation harmless (0.57); layers 8 to 16: 0.15 (3/17, p = 0.003), coherence 82 vs 88; untouched max-effort vs neutral 0.67 (14/7) |
 
-## 4. Week 7 offline (2026-10-30): reading the texts, `week7_offline.md`
+## 4. Week 7 offline (2026-10-30): reading the texts, `week7_results.md` sections 1 to 3
 
 | # | analysis | result |
 | --- | --- | --- |
@@ -67,7 +67,7 @@ v4 vectors: same recipe as v3 with 30 items x 2 tasks x 5 repeats = 300 response
 | 4.2 | coherence across all forms | holds for removal at -0.05/-0.1 (89, slightly above baseline), addition at <= +0.05, random, multi-layer, positions, readouts; drops for addition at >= +0.075 from layer 16 on (81 to 84), removal at -0.2 (83 to 86), local ablation (82), all-layer ablation (2) |
 | 4.3 | paper text features | our exhortation prompt reproduces the paper's feature signature (r = 0.96); early-layer addition reproduces most of it (r = 0.4 to 0.5: longer, more sentences, more rare words and semicolons, fewer positive words) but with shorter, simpler sentences; removal flattens vocabulary rather than mirroring the exhortation (r about 0); local ablation keeps the "more" and breaks the sentences |
 
-## 5. Week 7 GPU batch (2026-10-30): controls, transfer, role cues, necessity, `week7_results.md`
+## 5. Week 7 GPU batch (2026-10-30): controls, transfer, role cues, necessity, `week7_results.md` sections 4 to 7
 
 | # | experiment | values | result |
 | --- | --- | --- | --- |
