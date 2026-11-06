@@ -61,6 +61,12 @@ its shard file, so `vast pull` often and `vast push --full` after an instance lo
 `vast jobs` lists tmux sessions and GPU use; `vast status` lists every instance on the account (the account is
 shared: do not `down` instances you did not create).
 
+Driver check after bootstrap (2026-11-06): `torch>=2.5` resolves to the newest wheel (2.15+cu132), which fails on
+hosts with an older NVIDIA driver (570 = CUDA 12.8: "The NVIDIA driver on your system is too old"). If
+`torch.cuda.is_available()` is False, install the matching build:
+`uv pip install --python .venv/bin/python --index-url https://download.pytorch.org/whl/cu128 'torch<2.10'`.
+Some offers also come up `exited` and never accept ssh; `vast down --yes` and take the next offer.
+
 Multi-GPU models: `vast up --num-gpus 2 --gpu A100_PCIE` then `vast run --gpus-per-shard 2 ...` (one shard
 spanning both GPUs with `device_map=auto`). Set `STEER_MODEL=<hf id>` in the module args via `--model`.
 
@@ -153,6 +159,18 @@ unsteered samples) as the null comparison; steered cells alias the baseline samp
   world-class-vs-skilled bridge; `make_ablation_jobs.py --neutral-all-keys` adds the random-direction control to the
   vs-neutral necessity cell. `local/week7_cells.sh` builds the week-7 manifests and the essay extraction prompts.
   (tables under `docs/results/2026-10-27_w6_sweep/` and `docs/results/2026-10-27_w6_small/`).
+
+## Week 8 additions (2026-11-06)
+
+- `docs/week8_results.md`: the week-8 report (plan in repo-root `week8_plan.txt`, from `3110_meeting_notes.md`).
+  Coherence of effort vs random steering across the grid, win rate against coherence at pair and cell level, the
+  paper's rubric coder on our pairs, the role direction. Tables and figures in `docs/results/2026-11-06_w8/`.
+- `local/week8_coherence.py`: cross-run coherence and win-rate analyses (uses `analyze_dose.pair_table`).
+- `local/rubric_judge.py`: the paper's blind task-rubric coder (`run_task_rubric_feature_coding.code_sample_row`,
+  gemini-2.5-flash, temperature 0) applied to a fixed list of our judged cells; resumable; paid.
+- `local/week8_cells.sh`: builds `vectors/qwen3.5-9b_v4_role` (v4 plus `R_id_perp`, the role direction with its
+  effort component projected out), the `w8_role_steer` manifest and the essay role contrast set; `vast/w8_chain.sh`
+  runs projections (`steer/project.py`), the role steering cells and the essay role extraction on the instance.
 
 ## Athena (SLURM) runner, kept for reference
 
