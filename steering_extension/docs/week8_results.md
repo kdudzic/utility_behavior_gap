@@ -234,6 +234,74 @@ among resolved pairs whose coherence differs by at most 3 points. Run `w8_role_s
 - At layer 6 addition, R_id and R_id perp both win about 0.65 to 0.69 over 16 to 17 resolved pairs with 43 to 44
   ties: too few resolved pairs to tell them from each other, from E, or from random (p 0.08 to 0.23).
 
+### 4.4 Four more recipes for a role vector (PI request after 4.3)
+
+All essay task, steered at the same three cells (layer 6 +0.1, layer 10 -0.1, layer 16 -0.1) against the unsteered
+essay, 60 pairs per cell, each vector also with its E component projected out ("perp"). Runs `w8b_role_local`,
+`w8b_role_remote`.
+
+| vector | contrast (pos vs neg) | source | before steering |
+|---|---|---|---|
+| R_act | "pretend you are a world-class ... and act as that person would" vs the direct world-class cue | v4, grant + postmortem, 300 per arm | split-half -0.47, cos(E) 0.26 to 0.30 |
+| R_sharp | world-class vs skilled on essays, keeping the quarter of (pos, neg) pairs with the largest judge-scored craft gap | essay_role_v1 responses, haiku craft score 0 to 100 | judge barely separates the arms: 73.4 vs 72.4, only 19% of pairs with a positive gap; cos with the unfiltered R_id 0.85 to 0.93, cos(E) 0.41 to 0.58 |
+| R_wide | 20 world-class-essayist paraphrases vs 20 novice-essay-writer paraphrases | new extraction (essay, 300 per arm), response mean | the first reliable role vector: split-half 0.87 / 0.70 / 0.84 at layers 6 / 10 / 16, held-out AUC 0.93 / 0.88 / 0.95 (R_id on essays: -0.55); cos(E) 0.41 to 0.48, cos(R_id) 0.43 to 0.47 |
+| R_content | "You are a world-class essayist." vs "You are a world-class <one of 20 other professions>." | new extraction (essay, 300 per arm), response mean | weak: split-half 0.48 / 0.34 / 0.65, AUC 0.62 / 0.56 / 0.74; cos(E) -0.27 to -0.20 (points slightly away from effort), cos(R_wide) -0.24 to -0.21 |
+
+Steering results. Runs `w8b_role_local` (R_act, R_sharp) and `w8b_role_remote` (R_wide, R_content), judged by the
+same panel; pooled null cell 20 / 16 with 84 ties. Comparison columns as in 4.3: E cell and pooled random cell at
+the same layer and dose (Fisher p), "equal coh." = win rate among resolved pairs within 3 coherence points.
+Table `results/2026-11-06_w8/role_recipes_vs_E_random.csv`.
+
+| steered with | layer | r | W / L | win rate | ties | coh a / b | E cell (p) | random cell (p) | equal coh. |
+|---|---|---|---|---|---|---|---|---|---|
+| R_act | 6 | +0.1 | 10 / 7 | 0.59 | 43 | 89.2 / 88.5 | 22 / 3 (0.06) | 16 / 25 (0.25) | 0.71 (7) |
+| R_act perp | 6 | +0.1 | 7 / 11 | 0.39 | 42 | 88.0 / 88.5 | 22 / 3 (0.001) | 16 / 25 (1.0) | 0.33 (3) |
+| R_act | 10 | -0.1 | 7 / 13 | 0.35 | 40 | 88.6 / 88.5 | 2 / 29 (0.02) | 13 / 27 (1.0) | 0.22 (9) |
+| R_act perp | 10 | -0.1 | 8 / 13 | 0.38 | 39 | 86.9 / 88.5 | 2 / 29 (0.009) | 13 / 27 (0.78) | 0.40 (5) |
+| R_act | 16 | -0.1 | 8 / 15 | 0.35 | 37 | 89.7 / 88.5 | 5 / 37 (0.05) | 20 / 21 (0.31) | 0.18 (11) |
+| R_act perp | 16 | -0.1 | 2 / 12 | 0.14 | 46 | 86.8 / 88.5 | 5 / 37 (1.0) | 20 / 21 (0.03) | 0.00 (3) |
+| R_sharp | 6 | +0.1 | 6 / 12 | 0.33 | 42 | 85.6 / 88.5 | 22 / 3 (<0.001) | 16 / 25 (0.78) | 0.50 (6) |
+| R_sharp perp | 6 | +0.1 | 7 / 12 | 0.37 | 41 | 86.0 / 88.5 | 22 / 3 (0.001) | 16 / 25 (1.0) | 0.75 (4) |
+| R_sharp | 10 | -0.1 | 2 / 29 | 0.06 | 29 | 87.8 / 88.5 | 2 / 29 (1.0) | 13 / 27 (0.009) | 0.00 (16) |
+| R_sharp perp | 10 | -0.1 | 7 / 18 | 0.28 | 35 | 89.5 / 88.5 | 2 / 29 (0.06) | 13 / 27 (0.79) | 0.14 (14) |
+| R_sharp | 16 | -0.1 | 1 / 30 | 0.03 | 29 | 90.0 / 88.5 | 5 / 37 (0.23) | 20 / 21 (<0.001) | 0.00 (21) |
+| R_sharp perp | 16 | -0.1 | 6 / 20 | 0.23 | 34 | 89.3 / 88.5 | 5 / 37 (0.31) | 20 / 21 (0.04) | 0.08 (12) |
+| R_wide | 6 | +0.1 | 12 / 5 | 0.71 | 43 | 86.8 / 87.2 | 22 / 3 (0.24) | 16 / 25 (0.04) | 0.86 (7) |
+| R_wide perp | 6 | +0.1 | 6 / 9 | 0.40 | 45 | 87.0 / 87.2 | 22 / 3 (0.003) | 16 / 25 (1.0) | 0.80 (5) |
+| R_wide | 10 | -0.1 | 0 / 56 | 0.00 | 4 | 80.2 / 87.2 | 2 / 29 (0.12) | 13 / 27 (<0.001) | 0.00 (12) |
+| R_wide perp | 10 | -0.1 | 0 / 57 | 0.00 | 3 | 78.1 / 87.2 | 2 / 29 (0.12) | 13 / 27 (<0.001) | 0.00 (11) |
+| R_wide | 16 | -0.1 | 2 / 55 | 0.04 | 3 | 81.7 / 87.2 | 5 / 37 (0.13) | 20 / 21 (<0.001) | 0.00 (12) |
+| R_wide perp | 16 | -0.1 | 0 / 54 | 0.00 | 6 | 81.0 / 87.2 | 5 / 37 (0.01) | 20 / 21 (<0.001) | 0.00 (8) |
+| R_content | 6 | +0.1 | 7 / 15 | 0.32 | 38 | 89.3 / 87.2 | 22 / 3 (<0.001) | 16 / 25 (0.78) | 0.00 (9) |
+| R_content perp | 6 | +0.1 | 8 / 14 | 0.36 | 38 | 88.4 / 87.2 | 22 / 3 (<0.001) | 16 / 25 (1.0) | 0.50 (8) |
+| R_content | 10 | -0.1 | 6 / 16 | 0.27 | 38 | 85.1 / 87.2 | 2 / 29 (0.05) | 13 / 27 (0.78) | 0.43 (7) |
+| R_content perp | 10 | -0.1 | 9 / 10 | 0.47 | 41 | 87.2 / 87.2 | 2 / 29 (0.001) | 13 / 27 (0.39) | 0.33 (6) |
+| R_content | 16 | -0.1 | 8 / 13 | 0.38 | 39 | 85.9 / 87.2 | 5 / 37 (0.02) | 20 / 21 (0.59) | 0.71 (7) |
+| R_content perp | 16 | -0.1 | 4 / 15 | 0.21 | 41 | 85.8 / 87.2 | 5 / 37 (0.44) | 20 / 21 (0.05) | 0.17 (6) |
+
+- R_act (pretend-and-act-as vs the direct cue) and R_content (essayist vs other world-class profession) do
+  nothing: every cell sits at the random level (p vs random 0.25 to 1.0, except R_act perp at layer 16, 2 / 12
+  with 46 ties), and all removal cells differ from the E cell. Their perps are the same. R_content also lost
+  coherence at layers 10 and 16 (85 to 86).
+- R_sharp (judge-filtered world-class vs skilled, essays) behaves like E at removal: layer 10 2 / 29 (E 2 / 29),
+  layer 16 1 / 30 (E 5 / 37), both with 29 ties and no coherence cost; at layer 6 addition it loses (6 / 12,
+  coherence 85.6), where E wins 22 / 3. With E projected out the removal effect shrinks to 7 / 18 and 6 / 20
+  (0.28, 0.23; equal-coherence 0.14 and 0.08) and is no longer different from E (p 0.06, 0.31) or clearly from
+  random (p 0.79, 0.04). Its cosine with E is 0.41 to 0.58, so most of this is E again, and the filter kept only
+  75 pairs with a judge that barely separates the arms (section above), so the remainder is noisy.
+- R_wide (20 world-class paraphrases vs 20 novice paraphrases) is the first reliable role vector and the only
+  one that steers on its own. Removal (pushing toward "novice") loses almost every pair: 0 / 56 and 2 / 55 with
+  3 to 4 ties, far below E (2 / 29, 5 / 37) and random (13 / 27, 20 / 21), and this survives projecting E out
+  (0 / 57, 0 / 54). The essays are not broken: mean coherence 80 (10th percentile 72, no truncation), and the
+  lowest-scored one is a plain, correct, student-style essay ("It helps employees stay healthy and happy ...").
+  The novice direction turns the prose plain and simple, the coherence judge marks that down, and the panel
+  never picks it. Addition at layer 6 wins 12 / 5 (0.71; E 22 / 3, random 16 / 25, p 0.04 vs random) but the
+  perp version does not (6 / 9), so the gain from adding R_wide at layer 6 is its E component.
+- So R_wide-minus-E is a direction that is not effort and that the judges care about, but in one direction
+  only: removing it makes writing worse (simpler), adding it does nothing. It is a competence or register
+  direction, not the "world-class essayist identity" we were looking for. Whether it adds anything over E when
+  added at layers 10 to 16, or at smaller doses, was not tested.
+
 ## 5. Takeaways
 
 - The win-rate effects of the effort direction are not coherence effects. Random directions keep coherence
@@ -249,5 +317,10 @@ among resolved pairs whose coherence differs by at most 3 points. Run `w8_role_s
   cleanest cell (layer 10 removal) and only damages at layer 16. An essay-built role vector is again mostly E
   plus noise. A role direction separate from effort is not extractable with this recipe in this model, where the
   role effect itself is 0.55 to 0.57.
-- Cost this week: $1.08 rubric, $1.45 judging, $0.43 coherence, about $0.70 vast (two instances, one dead on
-  arrival).
+- Four more recipes (4.4): act-as-the-person and essayist-vs-other-profession give nothing; judge-filtered
+  world-class vs skilled is E again. World-class vs novice paraphrases gives the first reliable role vector
+  (split-half 0.70 to 0.87), and the part of it that is not E does steer: removing it makes the essay plain
+  and simple and loses 0 / 57 and 0 / 54 at layers 10 and 16, while adding it at layer 6 does nothing (6 / 9).
+  It is a competence direction with a downward lever only, not the role identity.
+- Cost this week: $1.08 rubric, $0.44 craft judge, $6.88 judging (420 + 1,560 pairs), $1.93 coherence, about
+  $2.65 vast (three instances, one dead on arrival). About $10.33 OpenRouter in all.

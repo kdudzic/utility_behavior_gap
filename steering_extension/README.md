@@ -171,6 +171,13 @@ unsteered samples) as the null comparison; steered cells alias the baseline samp
 - `local/week8_cells.sh`: builds `vectors/qwen3.5-9b_v4_role` (v4 plus `R_id_perp`, the role direction with its
   effort component projected out), the `w8_role_steer` manifest and the essay role contrast set; `vast/w8_chain.sh`
   runs projections (`steer/project.py`), the role steering cells and the essay role extraction on the instance.
+- Follow-up (four more role-vector recipes, section 4.4 of the report): `local/make_contrast_set.py` gained the
+  `R_wide` (20 world-class-essayist vs 20 novice paraphrases) and `R_content` (world-class essayist vs world-class
+  other profession) contrasts and the `ACT_AS` essay cue; `local/sharpen_role.py` builds `R_sharp` from the essay
+  R_id responses where a haiku craft judge sees the biggest gap (paid, resumable); `local/week8b_cells.sh local|remote`
+  builds the `w8b_role_local` (R_act, R_sharp and their E-orthogonal versions) and `w8b_role_remote` (R_wide,
+  R_content and perps) manifests; `vast/w8b_chain.sh` runs extraction and both generations on the instance;
+  `local/week8b_compare.py` tables each cell against the E and random cells at the same layer and dose.
 
 ## Athena (SLURM) runner, kept for reference
 
