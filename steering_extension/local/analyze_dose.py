@@ -34,11 +34,8 @@ def load(p: Path) -> list[dict]:
     return [json.loads(l) for l in p.open()] if p.exists() else []
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--run-dir", type=Path, required=True)
-    args = ap.parse_args()
-    rd = args.run_dir
+def pair_table(rd: Path) -> pd.DataFrame:
+    """One row per judged pair: panel outcome (W/L/T for side a), all-vote tallies, words and coherence of both sides."""
     jobs = {j["pair_uid"]: j for j in load(rd / "generation_jobs.jsonl")}
     votes = load(rd / "judge_votes.jsonl")
     gens = {g["output_id"]: g for g in load(rd / "generations.jsonl")}
@@ -68,7 +65,15 @@ def main() -> None:
             "coh_a": coh.get(f"{uid}::a", np.nan), "coh_b": coh.get(job.get("alias_b") or f"{uid}::b", np.nan),
             "trunc_a": gens.get(f"{uid}::a", {}).get("finish_reason") == "length",
         })
-    P = pd.DataFrame(pair_rows)
+    return pd.DataFrame(pair_rows)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--run-dir", type=Path, required=True)
+    args = ap.parse_args()
+    rd = args.run_dir
+    P = pair_table(rd)
     # 1. per-cell table
     rows = []
     for cell, g in P.groupby("cell"):
