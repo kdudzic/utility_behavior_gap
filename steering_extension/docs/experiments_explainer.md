@@ -76,7 +76,18 @@ v4 vectors: same recipe as v3 with 30 items x 2 tasks x 5 repeats = 300 response
 | 5.3 | role cues | world-class and skilled prompts; E ablated at layers 8 to 16, E added at layer 6 +0.1, vs the untouched role essay; bridge; 300 pairs | ablation hurts under both (3/31, 6/27); addition helps under skilled (17/5, 0.77) but not under world-class (11/13); world-class vs skilled 8/6 |
 | 5.4 | clean necessity test | max-effort prompt, E or rand0 ablated at layers 8 to 16, vs the neutral-prompt essay; 120 pairs | E ablated: 7/19 (0.27, p = 0.03), the exhortation no longer helps; rand0 ablated: 12/8 (0.60), advantage intact; coherence 82 vs 89 |
 
-## 6. Standing answers to the hypotheses (after week 7)
+## 7. Week 8 (2026-11-06): coherence vs random, win rate vs coherence, rubric coder, role direction, `week8_results.md`
+
+| # | experiment | values | result |
+| --- | --- | --- | --- |
+| 7.1 | coherence of effort vs random steering | week-7 grid (layers 6, 10, 14, 20 x r -0.1, +0.05, +0.1), effort from the week-6 sweep, random pooled | random keeps coherence everywhere (87.6 to 89.2); effort keeps it at removal and at +0.05 up to layer 14, loses it at +0.1 from layer 10 (86, 84, 84); only ablation costs clearly (-5.4). Coherence does not explain the effort-vs-random win-rate gap |
+| 7.2 | win rate vs coherence, pair and cell level | 9,120 judged essay pairs, 126 cells | the panel picks the more coherent essay 85 to 100% of the time whenever coherence differs by > 3, in null cells too; at equal coherence the effort effect stays (removal 0.00 of 99 pairs at layers 6 to 14; addition +0.1 wins 0.90 of 40) while random sits at 0.41 to 0.47 and null at 0.50; random's 0.36 comes from small coherence losses the panel punishes |
+| 7.3 | paper's rubric coder on our pairs | gemini-2.5-flash at temperature 0, blind A/B, 6 essay markers, 10 cells x 60 pairs + grant cell, $1.08 | our exhortation matches the paper's profile (+0.3 to +0.4 on thesis, depth, example, closure); adding E raises argument depth and concrete example (+0.4) but not thesis or closure; removing E drops every content marker 0.5 to 0.8 with plausibility flat; ablation under exhortation is the only cell losing plausibility (-0.28); random 0 lowers markers 0.2 to 0.3, random 1 nothing; world-class vs skilled nothing |
+| 7.4 | projection of untouched essays onto E, R_id, R_id minus E, random | 60 world-class + 60 skilled (week 7), 180 max-effort + 120 neutral (week 6), layers 4 to 20 | the world-class cue shifts the model along E by 0.51 to 0.65 of the exhortation's shift (AUC 0.60 to 0.74 vs 0.67 to 0.84); along R_id-minus-E neither contrast moves (AUC 0.50 to 0.57); random nothing. The role cue's trace is mostly the effort direction |
+| 7.5 | essay-built role vector | world-class vs skilled, 30 essay topics x 10 repeats, 300 per arm | split-half -0.34 to +0.26, AUC 0.41 to 0.63; cosine with E 0.43 to 0.50, with the old R_id 0.34 to 0.40; not steered with |
+| 7.6 | steering with R_id and R_id minus E | layer 6 +0.1, layer 10 -0.1, layer 16 -0.1; 60 pairs per cell, 420 pairs | R_id steers like a weak E: removal 6/19 and 7/29 (E 2/29, 5/37; random 13/27, 20/21), addition 11/6 (E 22/3, random 16/25). R_id minus E: layer-10 removal gone (11/15, p = 0.002 vs E), layer-16 removal 4/15 with a coherence drop (86), layer-6 addition 11/5 with 44 ties (n.s. vs anything). The role vector's steering effect is its effort component |
+
+## 6. Standing answers to the hypotheses (after week 7; week 8 adds: the win-rate effects are not coherence effects, see 7.1 and 7.2; the paper's rubric markers move the same way for the vector as for the prompt on content, not on framing, see 7.3; the role cue rides on E, see 7.4)
 
 - H2, removing the direction cancels the effect: supported. Full dose curve at 12 layers (week 6); against
   matched random controls the effort-specific removal is clear at layers 10 to 16 and on grant at all layers
