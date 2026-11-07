@@ -23,7 +23,7 @@ How to read every number in this deck:
 ## Takeaways
 
 - **The effort vector's win-rate effects are not coherence effects.** Random directions never change coherence. The effort vector changes it only at +0.1 from layer 10 on. The win rates differ where coherence does not.
-- **The judges do follow coherence, but the effort effect survives at equal coherence.** Among pairs within 3 coherence points of each other, removal at layers 6 to 14 wins 0 of 99, addition wins 0.90 of 40, random 0.41 to 0.47, null 0.50.
+- **The panel prefers the more coherent essay, yet at equal coherence the effort vector still wins or loses.** Among pairs within 3 coherence points of each other, removal at layers 6 to 14 wins 0 of 99, addition wins 0.90 of 40, random 0.41 to 0.47, null 0.50.
 - **The paper's rubric coder sees the vector doing part of what the prompt does.** Adding E raises argument depth and concrete examples, not thesis framing or closure. Removing E lowers every content marker. Plausibility stays flat.
 - **The "world-class essayist" prompt leaves its trace in the model along the effort direction.** Half to two thirds of the exhortation's shift. Along the rest of the role vector, nothing.
 - **Five role-vector recipes give no role direction that improves essays on its own.** One recipe (world-class vs novice) gives a reliable vector whose non-effort part does steer, but only downward: removing it makes the prose plain and loses 0 / 57.
@@ -54,9 +54,9 @@ Essay task, neutral prompt. Side a steered, side b the unsteered essay from the 
 - At layers 6 to 14 the effort vector and the random direction have the same coherence, yet removal wins 0.06 to 0.19 against random's 0.30 to 0.53, and addition wins 0.82 to 0.88 against 0.33 to 0.39.
 - The one cell where the effort vector loses coherence (layer 14, +0.1, 84.3) is also the one where its win rate falls to 0.52.
 
-## 2. The judges follow coherence, but the effort effect survives at equal coherence
+## 2. At equal coherence, removing E still loses and adding E still wins
 
-![Win rate of side a against the coherence gap (side a minus side b), over 9,120 judged pairs. Wherever the gap is larger than 3 points, every group follows coherence: the more coherent essay wins 85 to 100% of the time, in null cells too. In the equal-coherence bin (-3 to +3) effort removal still loses (0.10 over 346 pairs) and effort addition still wins (0.71 over 302 pairs), while random sits at 0.41 to 0.47 and null at 0.50. Restricted to layers 6 to 14: removal 0.00 of 99 pairs, addition at +0.1 0.90 of 40.](results/2026-11-06_w8/pairs_winrate_by_coherence_gap.png)
+![Win rate of side a against the coherence gap (side a minus side b), over 9,120 judged pairs. Wherever the gap is larger than 3 points, the panel picks the more coherent essay 85 to 100% of the time, in every group, null cells too. In the equal-coherence bin (-3 to +3) effort removal still loses (0.10 over 346 pairs) and effort addition still wins (0.71 over 302 pairs), while random sits at 0.41 to 0.47 and null at 0.50. Restricted to layers 6 to 14: removal 0.00 of 99 pairs, addition at +0.1 0.90 of 40.](results/2026-11-06_w8/pairs_winrate_by_coherence_gap.png)
 
 ## 3. The paper's rubric coder on our pairs
 
