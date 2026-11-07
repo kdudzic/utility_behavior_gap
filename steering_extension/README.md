@@ -163,6 +163,8 @@ unsteered samples) as the null comparison; steered cells alias the baseline samp
 ## Week 8 additions (2026-11-06)
 
 - `docs/week8_results.md`: the week-8 report (plan in repo-root `week8_plan.txt`, from `3110_meeting_notes.md`).
+  `docs/week8_onepager.md` is the two-page summary (one page of text, one of figures); build the PDF with
+  `pandoc week8_onepager.md -o week8_onepager.pdf --pdf-engine=lualatex --template ~/eisvogel/eisvogel.latex` in `docs/`.
   Coherence of effort vs random steering across the grid, win rate against coherence at pair and cell level, the
   paper's rubric coder on our pairs, the role direction. Tables and figures in `docs/results/2026-11-06_w8/`.
 - `local/week8_coherence.py`: cross-run coherence and win-rate analyses (uses `analyze_dose.pair_table`).
