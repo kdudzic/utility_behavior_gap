@@ -56,7 +56,7 @@ Essay task, neutral prompt. Side a steered, side b the unsteered essay from the 
 
 ## 2. At equal coherence, removing E still loses and adding E still wins
 
-![Win rate of side a against the coherence gap (side a minus side b), over 9,120 judged pairs. Wherever the gap is larger than 3 points, the panel picks the more coherent essay 85 to 100% of the time, in every group, null cells too. In the equal-coherence bin (-3 to +3) effort removal still loses (0.10 over 346 pairs) and effort addition still wins (0.71 over 302 pairs), while random sits at 0.41 to 0.47 and null at 0.50. Restricted to layers 6 to 14: removal 0.00 of 99 pairs, addition at +0.1 0.90 of 40.](results/2026-11-06_w8/pairs_winrate_by_coherence_gap.png)
+![Win rate of side a against the coherence gap (side a minus side b), over 9,120 judged pairs, all layers and doses pooled (effort: layers 6 to 28 from the week-6 sweep; random: layers 6, 10, 14, 20). Wherever the gap is larger than 3 points, the panel picks the more coherent essay 85 to 100% of the time, in every group, null cells too. In the equal-coherence bin (-3 to +3) effort removal still loses (0.10 over 346 pairs) and effort addition still wins (0.71 over 302 pairs), while random sits at 0.41 to 0.47 and null at 0.50. Restricted to layers 6 to 14: removal 0.00 of 99 pairs, addition at +0.1 0.90 of 40.](results/2026-11-06_w8/pairs_winrate_by_coherence_gap.png)
 
 ## 3. The paper's rubric coder on our pairs
 
