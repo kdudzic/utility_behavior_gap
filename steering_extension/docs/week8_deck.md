@@ -80,9 +80,9 @@ The paper's blind coder (gemini-2.5-flash, temperature 0, code unchanged) sees t
 
 ## 4a. The "world-class" prompt leaves its trace along the effort direction
 
-We took essays written with no steering under four prompts (world-class, skilled, max-effort, neutral), re-encoded them, and measured each essay's position along a direction, like a ruler. AUC is the chance that a random essay from the first group sits further along the ruler than a random essay from the second (0.50 is chance, 1.00 is a perfect split). Ratio is the world-class shift divided by the exhortation shift. 60 essays per role prompt, 180 max-effort, 120 neutral.
+We took essays written with no steering under four prompts (world-class, skilled, max-effort, neutral), re-encoded them, and measured each essay's position along a direction, like a ruler. Rows are rulers, columns are pairs of prompt groups, and every row uses the same 420 untouched essays. AUC is the chance that a random essay from the first group sits further along the ruler than a random essay from the second (0.50 is chance, 1.00 is a perfect split). Ratio is the world-class shift divided by the exhortation shift on that ruler. 60 essays per role prompt, 180 max-effort, 120 neutral.
 
-| ruler | layer | world-class vs skilled, AUC | max-effort vs neutral, AUC | ratio |
+| ruler (direction measured along) | layer | AUC: world-class essays vs skilled essays | AUC: max-effort essays vs neutral essays | ratio |
 |---|---|---|---|---|
 | E (effort vector) | 6 | 0.65 | 0.77 | 0.52 |
 | E | 10 | 0.60 | 0.69 | 0.51 |
