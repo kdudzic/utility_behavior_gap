@@ -155,6 +155,8 @@ unsteered samples) as the null comparison; steered cells alias the baseline samp
 - `docs/week7_deck.md`: the week-7 deck. Build with `~/bin/md2pptx`, then `uv run --no-project --with python-pptx python3
   steering_extension/local/pptx_fit.py deck.pptx deck.pptx` to merge pandoc's split table slides back to one slide per
   heading and fit the tables.
+- `docs/week8_deck.md`: the week-8 deck, 11 slides plus 3 backup tables, one finding per slide with the design stated
+  on each table (31.10 advice). Same build as week 7: `~/bin/md2pptx`, then `pptx_fit.py`.
 - `local/make_role_jobs.py`: steering and ablation under the paper's role-cue prompts (world-class / skilled), with a
   world-class-vs-skilled bridge; `make_ablation_jobs.py --neutral-all-keys` adds the random-direction control to the
   vs-neutral necessity cell. `local/week7_cells.sh` builds the week-7 manifests and the essay extraction prompts.
