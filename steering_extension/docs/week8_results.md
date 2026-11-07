@@ -1,25 +1,27 @@
 # Week 8 results (2026-11-06): coherence vs random, win rate vs coherence, the paper's rubric coder, the role direction
 
-Plan: repo-root `week8_plan.txt`, from `steering_extension/3110_meeting_notes.md`. Raw tables and figures in
-`docs/results/2026-11-06_w8/`. Sections 1 to 3 are offline re-analyses of weeks 6 and 7 plus one new coder pass;
-section 4 is the week-8 GPU batch (role direction).
+The plan is the repo-root `week8_plan.txt`, written from `steering_extension/3110_meeting_notes.md`. Raw tables and
+figures are in `docs/results/2026-11-06_w8/`. Sections 1 to 3 re-analyse weeks 6 and 7 offline and add one new coder
+pass. Section 4 is the week-8 GPU batch on the role direction.
 
 ## 0. How to read the tables
 
 Every number is a pairwise comparison. For each topic and repeat the model writes one essay with the intervention
-(side a) and one without (side b), from the same prompt, unless the row says otherwise. The paper's three judges pick
-the better one in both orders; a judge whose orders disagree counts as a tie, panel ties are excluded. W / L = pairs
-won / lost by side a; win rate = W / (W + L); 0.50 = no effect; the null cells (unsteered vs unsteered) pooled over
-all runs give 71 / 69. Coherence is a separate 0 to 100 score from claude-haiku-4.5 at temperature 0 for each
-essay (fluent, on topic, consistent; told to ignore quality). Unsteered essays score 87 to 89. The effort vector is
-the week-6 v4 vector (response-token mean, max-effort minus neutral, grant + postmortem, 300 per arm); dose r is a
-fraction of the layer's RMS residual norm; r < 0 removes the direction.
+(side a) and one without (side b), from the same prompt, unless the row says otherwise. The paper's three judges
+pick the better one in both orders. A judge whose two orders disagree counts as a tie, and we drop the pairs the
+panel ties. W / L is the number of pairs side a won and lost, win rate is W / (W + L), and 0.50 means no effect. The
+null cells (unsteered vs unsteered) pooled over all runs give 71 / 69. Coherence is a separate 0 to 100 score that
+claude-haiku-4.5 at temperature 0 gives each essay for being fluent, on topic and consistent, with instructions to
+ignore quality. Unsteered essays score 87 to 89. The effort vector is the week-6 v4 vector (response-token mean,
+max-effort minus neutral, grant and postmortem responses, 300 per arm). The dose r is a fraction of the layer's RMS
+residual norm, and r < 0 removes the direction.
 
 ## 1. Coherence: effort direction vs random direction (note item 4)
 
-Essay, neutral prompt, side a steered, side b the unsteered essay from the same topic and repeat. Effort cells from
-the week-6 sweep (60 pairs each), random cells from week 7 (two directions pooled, 120 pairs each). "coh a / b" =
-mean coherence of the steered and the unsteered essay. Figure: `coherence_grid.png`.
+Essay task, neutral prompt. Side a is steered, side b is the unsteered essay from the same topic and repeat. The
+effort cells come from the week-6 sweep (60 pairs each), the random cells from week 7 (two directions pooled, 120
+pairs each). "coh a / b" is the mean coherence of the steered and the unsteered essay. The figure is
+`coherence_grid.png`.
 
 | layer | r | steered with | W / L | win rate | coh a / b | share a >= 80 |
 |---|---|---|---|---|---|---|
@@ -51,25 +53,26 @@ mean coherence of the steered and the unsteered essay. Figure: `coherence_grid.p
 | 8 to 16 | ablate | random, max-effort prompt vs neutral prompt | 12 / 8 | 0.60 | 89.1 / 88.1 | 0.90 |
 | all 32 | ablate | effort, max-effort vs untouched max-effort | 0 / 60 | 0.00 | 2.4 / 86.7 | 0.00 |
 
-Pooled over the 12 grid cells: effort 87.5 vs its unsteered twin 88.7 (delta -1.1, SE 0.4); random 88.3 vs 89.0
-(delta -0.7, SE 0.2).
+Pooled over the 12 grid cells, the effort-steered essays score 87.5 against 88.7 for their unsteered partners (delta
+-1.1, SE 0.4), and the random-steered essays 88.3 against 89.0 (delta -0.7, SE 0.2).
 
-- Random directions at r up to +0.1 leave coherence where it is: 87.6 to 89.2 at every cell, never more than 1.4
-  below the unsteered twin.
-- The effort direction is the same at removal (88.7 to 90.0, slightly above unsteered at layer 14) and at +0.05 in
-  layers 6 to 14. It costs coherence only at +0.1 from layer 10 on (86.1, 84.3, 83.9) and at +0.05 from layer 20.
-- Ablation of the effort direction is the only intervention with a clear coherence cost at the dose used: -5.4
-  points at layers 8 to 16, total breakdown at all 32 layers. Ablating a random direction costs nothing (+1.0).
-- So coherence does not separate effort from random where the win rates do (removal 0.06 to 0.19 vs random 0.26
-  to 0.53 at layers 6 to 14; addition 0.62 to 0.88 vs 0.26 to 0.50). The win-rate differences are not coherence
-  differences.
+- Random directions at r up to +0.1 do not change coherence. Every cell scores 87.6 to 89.2, never more than 1.4
+  below the unsteered essay.
+- The effort direction is the same at removal (88.7 to 90.0, above unsteered by 1.3 at layer 14) and at +0.05 in
+  layers 6 to 14. It costs coherence only at +0.1 from layer 10 on (86.1, 84.3, 83.9) and at +0.05 at layer 20.
+- Ablating the effort direction is the only intervention that costs coherence at the dose used. It loses 5.4 points
+  at layers 8 to 16 and breaks the essays at all 32 layers (coherence 2.4). Ablating a random direction costs
+  nothing (+1.0).
+- So coherence does not separate effort from random where the win rates do. At layers 6 to 14 removal wins 0.06 to
+  0.19 against random's 0.26 to 0.53, and addition wins 0.62 to 0.88 against 0.26 to 0.50, with the same coherence
+  on both sides. The win-rate differences are not coherence differences.
 
 ## 2. Win rate and coherence (note item 5)
 
-### 2.1 Pair level: the panel almost always picks the more coherent essay
+### 2.1 Pair level: the panel picks the more coherent essay
 
-Resolved pairs only, both essays scored. "gap" = coherence of side a minus coherence of side b. Figure:
-`pairs_winrate_by_coherence_gap.png`.
+Resolved pairs only, with both essays scored. "gap" is the coherence of side a minus the coherence of side b. The
+figure is `pairs_winrate_by_coherence_gap.png`.
 
 | side a | pairs | gap < -10 | -10 to -3 | -3 to +3 | +3 to +10 | > +10 | higher-coherence essay wins |
 |---|---|---|---|---|---|---|---|
@@ -81,26 +84,26 @@ Resolved pairs only, both essays scored. "gap" = coherence of side a minus coher
 | effort, abs(r) = 0.2 | 567 | 0.00 (161) | 0.00 (86) | 0.01 (234) | 0.10 (52) | 0.35 (34) | 0.79 |
 | effort ablated 8-16 or all layers | 233 | 0.01 (204) | 0.00 (5) | 0.50 (16) | 1.00 (2) | 1.00 (6) | 0.99 |
 
-Cells: win rate of side a within each gap bin (pairs in brackets). Last column: among pairs with unequal coherence,
-share where the panel chose the essay with the higher coherence score.
+Each cell is the win rate of side a within that gap bin, with the number of pairs in brackets. The last column is
+the share of pairs with unequal coherence where the panel chose the essay with the higher coherence score.
 
 - Whenever the two essays differ in coherence by more than 3 points, the panel picks the more coherent one 85 to
-  100% of the time, in null cells as much as in steered cells. The coherence judge is told to ignore quality, but
-  its score tracks the panel's quality judgement closely. A logistic fit gives +2.3 to +2.9 log-odds per 10
-  coherence points in every group, also within cells.
-- The effort effect survives at equal coherence. Among pairs within 3 points of each other: effort removal wins
-  0.10 (346 pairs), random removal 0.41, null 0.50; effort addition wins 0.71 (302 pairs), random addition 0.47.
-  Restricting to layers 6 to 14: removal at -0.1 wins 0.00 of 99 equal-coherence pairs, addition at +0.1 wins
-  0.90 of 40 (`coherence_asymmetry.csv`).
-- Random directions lose through small coherence losses the panel punishes: the random essay is the less coherent
-  one (gap below -3) in 36% of random-addition pairs against 16% the other way (null cells: 33% vs 29%), and
-  those pairs go 0.02. At equal coherence random is near null (0.41 to 0.47 vs 0.50).
-- Ablation and high doses (abs(r) = 0.2) lose through coherence: 88% of ablation pairs have a gap below -10.
+  100% of the time, in null cells as much as in steered cells. The coherence judge is told to ignore quality, yet
+  its score predicts the panel's choice. A logistic fit gives +2.3 to +2.9 log-odds per 10 coherence points in every
+  group, also within cells.
+- The effort effect survives at equal coherence. Among pairs within 3 points of each other, effort removal wins 0.10
+  (346 pairs), random removal 0.41 and null 0.50. Effort addition wins 0.71 (302 pairs), random addition 0.47.
+  Restricted to layers 6 to 14, removal at -0.1 wins 0.00 of 99 equal-coherence pairs and addition at +0.1 wins 0.90
+  of 40 (`coherence_asymmetry.csv`).
+- Random directions lose through small coherence losses. The random essay is the less coherent one (gap below -3) in
+  36% of random-addition pairs against 16% the other way (null cells 33% vs 29%), and those pairs go 0.02. At equal
+  coherence random is near null (0.41 to 0.47 vs 0.50).
+- Ablation and high doses (abs(r) = 0.2) lose through coherence. 88% of ablation pairs have a gap below -10.
 
 ### 2.2 Cell level
 
-One point per cell (126 essay cells with at least 10 resolved pairs): win rate against the steered side's mean
-coherence. Figure: `winrate_vs_coherence.png`.
+One point per cell, for the 126 essay cells with at least 10 resolved pairs, of win rate against the steered side's
+mean coherence. The figure is `winrate_vs_coherence.png`.
 
 | cells | n | Spearman rho (win rate, coherence a) | p |
 |---|---|---|---|
@@ -110,21 +113,24 @@ coherence. Figure: `winrate_vs_coherence.png`.
 | random | 28 | +0.03 | 0.86 |
 | ablation | 6 | +0.81 | 0.05 |
 
-- Across all effort cells there is no overall relation (rho -0.20): the removal cells have high coherence and low
-  win rates, the addition cells the reverse. Within each sign the relation is positive: the cells that lose
-  coherence (late layers, high dose) also lose pairs.
-- Random cells show no relation (rho +0.03): their coherence hardly varies (87.6 to 89.2).
+- Across all effort cells there is no overall relation (rho -0.20), because the removal cells have high coherence
+  and low win rates and the addition cells the reverse. Within each sign the relation is positive. The cells that
+  lose coherence (late layers, high dose) also lose pairs.
+- Random cells show no relation (rho +0.03). Their coherence spans only 87.6 to 89.2.
 
 ## 3. The paper's rubric coder on our pairs (note item 2)
 
-The paper's blind task-rubric coder, code unchanged (`run_task_rubric_feature_coding.code_sample_row`):
-google/gemini-2.5-flash at temperature 0 sees the task and the two essays as A and B (sides random) and for each
-of six markers says which is better, tie, or not applicable. delta = share of pairs where the intervened essay was
-coded better minus share where the opponent was; CI bootstrapped over pairs; 60 pairs per cell, the same pairs the
-panel judged. Script `local/rubric_judge.py`; full tables with the CIs in `rubric_summary.md`. 660 calls, $1.08.
+We ran the paper's blind task-rubric coder with its code unchanged
+(`run_task_rubric_feature_coding.code_sample_row`). google/gemini-2.5-flash at temperature 0 sees the task and the
+two essays as A and B, in random order, and for each of six markers says which is better, tie, or not applicable.
+delta is the share of pairs where the coder preferred the intervened essay minus the share where it preferred the
+opponent, with a CI bootstrapped over pairs. Each cell has 60 pairs, the same pairs the panel judged. The script is
+`local/rubric_judge.py` and the full tables with CIs are in `rubric_summary.md`. The pass took 660 calls and cost
+$1.08.
 
-Paper's row for Qwen3.5-9B essays (17 pairs): exhortation raises argument depth +0.41, rhetorical coherence
-+0.29, concrete example +0.29; role (world-class vs skilled) raises thesis framing +0.47, concrete example +0.41.
+In the paper's row for Qwen3.5-9B essays (17 pairs), the exhortation raises argument depth +0.41, rhetorical
+coherence +0.29 and concrete example +0.29, and the role cue (world-class vs skilled) raises thesis framing +0.47
+and concrete example +0.41.
 
 | side a vs side b (panel W / L) | thesis framing | argument depth | concrete example | counterargument | rhetorical closure | plausibility |
 |---|---|---|---|---|---|---|
@@ -139,42 +145,42 @@ Paper's row for Qwen3.5-9B essays (17 pairs): exhortation raises argument depth 
 | random 1, layer 6 +0.1 vs unsteered (9 / 10) | +0.02 | +0.02 | +0.02 | +0.02 | +0.12 | -0.02 |
 | world-class vs skilled prompt, untouched (8 / 6) | +0.10 | +0.05 | -0.03 | -0.10 | +0.08 | -0.03 |
 
-Grant (7 markers), remove essay-built E at layer 16 -0.1 vs unsteered (0 / 49): every marker -0.77 to -0.93
-(problem significance -0.82, intervention specificity -0.88, evaluation rigor -0.93, feasibility -0.77, risks
--0.88, measurable impact -0.88, stakeholder fit -0.78).
+On grant (7 markers), removing the essay-built E at layer 16 -0.1 against unsteered (0 / 49) lowers every marker by
+0.77 to 0.93 (problem significance -0.82, intervention specificity -0.88, evaluation rigor -0.93, feasibility -0.77,
+risks -0.88, measurable impact -0.88, stakeholder fit -0.78).
 
-- Our exhortation replication matches the paper's rubric profile: argument depth, thesis, example and closure up
-  by 0.3 to 0.4, counterargument and plausibility unchanged.
+- Our exhortation replication matches the paper's rubric profile. Argument depth, thesis, example and closure go up
+  by 0.3 to 0.4, counterargument and plausibility do not move.
 - Adding the effort direction raises the two content markers the exhortation raises most, argument depth (+0.40 to
-  +0.45) and concrete example (+0.42 at layer 6), but not thesis framing or rhetorical closure (+0.03 to +0.10).
-  The prompt improves framing and flow as well; the vector improves reasoning and examples only. Under the
-  "skilled" prompt the vector lifts every marker (+0.42 to +0.70).
-- Removing the direction lowers every content marker by 0.5 to 0.8 while plausibility stays at 0: the essays are
-  emptier, not wrong. The grant version is the same picture at -0.8 to -0.9.
-- Ablation under the exhortation keeps argument depth and thesis above the untouched exhortation (+0.35, +0.27)
-  but loses on plausibility (-0.28, the only cell where this marker moves) and counterargument (-0.25). The
-  coder sees what the qualitative read found: more claims, invented specifics.
-- Random direction 0 lowers the markers by 0.2 to 0.3 (panel 7 / 15); random direction 1 does nothing (9 / 10).
-  The two random directions differ, as their panel results do.
-- World-class vs skilled: nothing moves (-0.10 to +0.10), in line with the panel's 8 / 6 and unlike the paper's
-  Qwen row (+0.47 thesis, 17 pairs).
+  +0.45) and concrete example (+0.42 at layer 6), but not thesis framing or rhetorical closure (+0.03 to +0.10). The
+  prompt improves framing and flow as well. The vector improves reasoning and examples only. Under the "skilled"
+  prompt the vector raises every marker (+0.42 to +0.70).
+- Removing the direction lowers every content marker by 0.5 to 0.8 while plausibility stays at 0. The essays are
+  emptier, not wrong. The grant cell shows the same pattern at -0.8 to -0.9.
+- Ablation under the exhortation keeps argument depth and thesis above the untouched exhortation (+0.35, +0.27) but
+  loses on plausibility (-0.28, the only cell where this marker moves) and counterargument (-0.25). The coder finds
+  what the qualitative read found, more claims and invented specifics.
+- Random direction 0 lowers the markers by 0.2 to 0.3 (panel 7 / 15). Random direction 1 does nothing (9 / 10). The
+  two random directions differ on the rubric as they do on the panel.
+- World-class vs skilled moves nothing (-0.10 to +0.10), which matches the panel's 8 / 6 and not the paper's Qwen
+  row (+0.47 thesis, 17 pairs).
 
 ## 4. The role direction (note item 3)
 
-What was known before this week (v4 layer profile, `mini_pilot_report.md`, `layer_selection.md`): the role vectors
-R_id (world-class minus skilled) and R_act were extracted alongside E but never used for steering. In the
-response-mean readout R_id does not replicate (split-half cosine -0.55 over layers 6 to 20 at 300 responses per
-arm, held-out AUC 0.42); E in the same readout is also weak by that measure (0.18, 0.57) yet steers, so the
-split-half is not the test. cos(E, R_id) is 0.48 at layer 6, 0.51 at 10, 0.56 at 16. The role effect itself is
-small in this model: paper 0.57 n.s., our replication 0.55 (31 / 25) and 8 / 6.
+This is what we knew before this week, from the v4 layer profile, `mini_pilot_report.md` and `layer_selection.md`.
+We extracted the role vectors R_id (world-class minus skilled) and R_act alongside E but never steered with them. In
+the response-mean readout R_id does not replicate (split-half cosine -0.55 over layers 6 to 20 at 300 responses per
+arm, held-out AUC 0.42). E in the same readout is also weak by that measure (0.18, 0.57) yet steers, so the
+split-half is not the test. cos(E, R_id) is 0.48 at layer 6, 0.51 at 10 and 0.56 at 16. The role effect itself is
+small in this model. The paper reports 0.57 n.s., our replication 0.55 (31 / 25) and 8 / 6.
 
 ### 4.1 Do the role prompts move the model along the effort direction? (2a)
 
-Untouched essays re-encoded without steering; the response-token-mean residual is projected onto each unit vector
-at layers 4 to 20 (`steer/project.py`, `local/week8_role.py`). 60 world-class and 60 skilled essays (week 7), 180
-max-effort and 120 neutral essays (week 6). Numbers: Cohen's d of the shift and the AUC for telling the two
-conditions apart from the projection alone; "ratio" = role shift divided by exhortation shift along the same
-direction. Full table `proj_role_vs_effort.csv`.
+We re-encode untouched essays without steering and project the response-token-mean residual onto each unit vector at
+layers 4 to 20 (`steer/project.py`, `local/week8_role.py`). The essays are 60 world-class and 60 skilled from week 7
+and 180 max-effort and 120 neutral from week 6. The numbers are Cohen's d of the shift and the AUC for telling the
+two conditions apart from the projection alone. "ratio" is the role shift divided by the exhortation shift along the
+same direction. The full table is `proj_role_vs_effort.csv`.
 
 | direction | layer | world-class minus skilled: d, AUC | max-effort minus neutral: d, AUC | ratio |
 |---|---|---|---|---|
@@ -190,29 +196,30 @@ direction. Full table `proj_role_vs_effort.csv`.
 | random | 6 to 20 | -0.17 to +0.13, 0.43 to 0.54 | -0.14 to +0.18, 0.46 to 0.55 | |
 
 - The "world-class" prompt moves the model along E at every layer, by half to two thirds of what the exhortation
-  does (ratio 0.51 to 0.65; AUC 0.60 to 0.74 against 0.67 to 0.84). E was built from grant and postmortem
-  responses, so this is a held-out task and a held-out prompt.
-- The part of R_id that is not E separates world-class from skilled essays barely (d 0.11 to 0.25, AUC 0.53 to
-  0.57) and the exhortation not at all (AUC 0.50 to 0.52). Along a random direction nothing moves.
-- So the role cue's trace in the residual stream is mostly the effort direction. This fits week 7: adding E
-  under "world-class" gave nothing (11 / 13), under "skilled" 17 / 5, because the strong cue already pushes
-  along E.
+  does (ratio 0.51 to 0.65, AUC 0.60 to 0.74 against 0.67 to 0.84). We built E from grant and postmortem responses,
+  so this is a held-out task and a held-out prompt.
+- The part of R_id that is not E separates world-class from skilled essays at d 0.11 to 0.25 (AUC 0.53 to 0.57) and
+  the exhortation not at all (AUC 0.50 to 0.52). Along a random direction nothing moves.
+- So the role cue's trace in the residual stream is mostly the effort direction. This fits week 7, where adding E
+  under "world-class" gave nothing (11 / 13) and under "skilled" 17 / 5, because the strong cue already pushes along
+  E.
 
 ### 4.2 An essay-built role vector (2d)
 
-World-class vs skilled on the 30 essay topics, 10 repeats, 300 responses per arm, the recipe of the essay-built E
-(`vectors/qwen3.5-9b_essay_role_v1`). Split-half cosine over layers 6 to 20: -0.34 to +0.26 (only layers 4, 5 and
-18 above 0.25); held-out AUC 0.41 to 0.63. Cosine with the grant-and-postmortem R_id 0.34 to 0.40; cosine with E
-0.43 to 0.50. The essay-built role vector agrees with E more than with the old role vector. Not used for
-steering: it would be a noisier E.
+World-class vs skilled on the 30 essay topics, 10 repeats, 300 responses per arm, with the recipe of the essay-built
+E (`vectors/qwen3.5-9b_essay_role_v1`). The split-half cosine over layers 6 to 20 is -0.34 to +0.26 (only layers 4,
+5 and 18 above 0.25) and the held-out AUC 0.41 to 0.63. Its cosine with the grant-and-postmortem R_id is 0.34 to
+0.40 and with E 0.43 to 0.50, so it agrees with E more than with the old role vector. We did not steer with it,
+because it would be a noisier E.
 
 ### 4.3 Steering with the role direction (2b, 2c)
 
-Essay, neutral prompt, side a steered with the v4 role vector R_id (world-class minus skilled, response mean,
-grant + postmortem) or with R_id minus its E component ("R_id perp"), side b the unsteered essay from the same
-topic and repeat. 30 topics x 2 repeats = 60 pairs per cell, the three cells where E is clearest. Comparison
-columns: the E cell and the pooled random cell at the same layer and dose, with Fisher p. "equal coh." = win rate
-among resolved pairs whose coherence differs by at most 3 points. Run `w8_role_steer`; null cell 12 / 10.
+Essay task, neutral prompt. Side a is steered with the v4 role vector R_id (world-class minus skilled, response
+mean, grant and postmortem) or with R_id minus its E component ("R_id perp"). Side b is the unsteered essay from the
+same topic and repeat. 30 topics x 2 repeats give 60 pairs per cell, at the three cells where E is clearest. The
+comparison columns give the E cell and the pooled random cell at the same layer and dose, with Fisher p. "equal
+coh." is the win rate among resolved pairs whose coherence differs by at most 3 points. The run is `w8_role_steer`
+and its null cell is 12 / 10.
 
 | steered with | layer | r | W / L | win rate | ties | coh a / b | E cell (p) | random cell (p) | equal coh. |
 |---|---|---|---|---|---|---|---|---|---|
@@ -223,34 +230,34 @@ among resolved pairs whose coherence differs by at most 3 points. Run `w8_role_s
 | R_id | 16 | -0.1 | 7 / 29 | 0.19 | 24 | 88.5 / 88.0 | 5 / 37 (0.53) | 20 / 21 (0.009) | 0.21 (19) |
 | R_id perp | 16 | -0.1 | 4 / 15 | 0.21 | 41 | 86.2 / 88.0 | 5 / 37 (0.44) | 20 / 21 (0.05) | 0.22 (9) |
 
-- The role vector steers, in the direction E does and more weakly: removal loses at layers 10 and 16 (0.24,
-  0.19; E 0.06, 0.12; random 0.32, 0.49), addition at layer 6 wins 0.65 (E 0.88, random 0.39). None of the
-  three differs from the E cell at p < 0.1, and the layer-16 removal differs from random at p = 0.009.
-- Take the E component out and the layer-10 removal effect is gone: 11 / 15, at the random level and different
-  from the E cell (p = 0.002). This is the cleanest cell: the role vector's removal effect at layer 10 is its
-  effort component.
-- At layer 16 the orthogonal remainder still loses (4 / 15) but with 41 ties and a coherence drop (86.2, share
-  >= 80 0.75; the only cell here that loses coherence), so part of that is damage, not role.
-- At layer 6 addition, R_id and R_id perp both win about 0.65 to 0.69 over 16 to 17 resolved pairs with 43 to 44
-  ties: too few resolved pairs to tell them from each other, from E, or from random (p 0.08 to 0.23).
+- The role vector steers in the direction E does, and more weakly. Removal loses at layers 10 and 16 (0.24 and 0.19,
+  where E gives 0.06 and 0.12 and random 0.32 and 0.49). Addition at layer 6 wins 0.65 (E 0.88, random 0.39). None
+  of the three differs from the E cell at p < 0.1, and the layer-16 removal differs from random at p = 0.009.
+- Take the E component out and the layer-10 removal effect is gone. R_id perp goes 11 / 15, at the random level and
+  different from the E cell (p = 0.002). This is the cleanest cell, and it says the role vector's removal effect at
+  layer 10 is its effort component.
+- At layer 16 the orthogonal remainder still loses (4 / 15) but with 41 ties and a coherence drop to 86.2 (share >=
+  80 is 0.75, the only cell here that loses coherence), so part of that is damage, not role.
+- At layer 6 addition, R_id and R_id perp both win 0.65 to 0.69 over 16 to 17 resolved pairs with 43 to 44 ties.
+  That is too few resolved pairs to tell them from each other, from E or from random (p 0.08 to 0.23).
 
 ### 4.4 Four more recipes for a role vector (PI request after 4.3)
 
-All essay task, steered at the same three cells (layer 6 +0.1, layer 10 -0.1, layer 16 -0.1) against the unsteered
-essay, 60 pairs per cell, each vector also with its E component projected out ("perp"). Runs `w8b_role_local`,
-`w8b_role_remote`.
+All on the essay task, steered at the same three cells (layer 6 +0.1, layer 10 -0.1, layer 16 -0.1) against the
+unsteered essay, 60 pairs per cell. Each vector also runs with its E component projected out ("perp"). The runs are
+`w8b_role_local` and `w8b_role_remote`.
 
 | vector | contrast (pos vs neg) | source | before steering |
 |---|---|---|---|
 | R_act | "pretend you are a world-class ... and act as that person would" vs the direct world-class cue | v4, grant + postmortem, 300 per arm | split-half -0.47, cos(E) 0.26 to 0.30 |
-| R_sharp | world-class vs skilled on essays, keeping the quarter of (pos, neg) pairs with the largest judge-scored craft gap | essay_role_v1 responses, haiku craft score 0 to 100 | judge barely separates the arms: 73.4 vs 72.4, only 19% of pairs with a positive gap; cos with the unfiltered R_id 0.85 to 0.93, cos(E) 0.41 to 0.58 |
-| R_wide | 20 world-class-essayist paraphrases vs 20 novice-essay-writer paraphrases | new extraction (essay, 300 per arm), response mean | the first reliable role vector: split-half 0.87 / 0.70 / 0.84 at layers 6 / 10 / 16, held-out AUC 0.93 / 0.88 / 0.95 (R_id on essays: -0.55); cos(E) 0.41 to 0.48, cos(R_id) 0.43 to 0.47 |
-| R_content | "You are a world-class essayist." vs "You are a world-class <one of 20 other professions>." | new extraction (essay, 300 per arm), response mean | weak: split-half 0.48 / 0.34 / 0.65, AUC 0.62 / 0.56 / 0.74; cos(E) -0.27 to -0.20 (points slightly away from effort), cos(R_wide) -0.24 to -0.21 |
+| R_sharp | world-class vs skilled on essays, keeping the quarter of (pos, neg) pairs with the largest judge-scored craft gap | essay_role_v1 responses, haiku craft score 0 to 100 | the judge scores the arms 73.4 vs 72.4, with a positive gap in only 19% of pairs; cos with the unfiltered R_id 0.85 to 0.93, cos(E) 0.41 to 0.58 |
+| R_wide | 20 world-class-essayist paraphrases vs 20 novice-essay-writer paraphrases | new extraction (essay, 300 per arm), response mean | the first reliable role vector. Split-half 0.87 / 0.70 / 0.84 at layers 6 / 10 / 16, held-out AUC 0.93 / 0.88 / 0.95 (R_id on essays: -0.55); cos(E) 0.41 to 0.48, cos(R_id) 0.43 to 0.47 |
+| R_content | "You are a world-class essayist." vs "You are a world-class <one of 20 other professions>." | new extraction (essay, 300 per arm), response mean | weak. Split-half 0.48 / 0.34 / 0.65, AUC 0.62 / 0.56 / 0.74; cos(E) -0.27 to -0.20 (points slightly away from effort), cos(R_wide) -0.24 to -0.21 |
 
-Steering results. Runs `w8b_role_local` (R_act, R_sharp) and `w8b_role_remote` (R_wide, R_content), judged by the
-same panel; pooled null cell 20 / 16 with 84 ties. Comparison columns as in 4.3: E cell and pooled random cell at
-the same layer and dose (Fisher p), "equal coh." = win rate among resolved pairs within 3 coherence points.
-Table `results/2026-11-06_w8/role_recipes_vs_E_random.csv`.
+Steering results follow. The same panel judged runs `w8b_role_local` (R_act, R_sharp) and `w8b_role_remote` (R_wide,
+R_content). The pooled null cell is 20 / 16 with 84 ties. The comparison columns are as in 4.3, the E cell and the
+pooled random cell at the same layer and dose with Fisher p, and "equal coh." is the win rate among resolved pairs
+within 3 coherence points. The table is `results/2026-11-06_w8/role_recipes_vs_E_random.csv`.
 
 | steered with | layer | r | W / L | win rate | ties | coh a / b | E cell (p) | random cell (p) | equal coh. |
 |---|---|---|---|---|---|---|---|---|---|
@@ -279,48 +286,50 @@ Table `results/2026-11-06_w8/role_recipes_vs_E_random.csv`.
 | R_content | 16 | -0.1 | 8 / 13 | 0.38 | 39 | 85.9 / 87.2 | 5 / 37 (0.02) | 20 / 21 (0.59) | 0.71 (7) |
 | R_content perp | 16 | -0.1 | 4 / 15 | 0.21 | 41 | 85.8 / 87.2 | 5 / 37 (0.44) | 20 / 21 (0.05) | 0.17 (6) |
 
-- R_act (pretend-and-act-as vs the direct cue) and R_content (essayist vs other world-class profession) do
-  nothing: every cell sits at the random level (p vs random 0.25 to 1.0, except R_act perp at layer 16, 2 / 12
-  with 46 ties), and all removal cells differ from the E cell. Their perps are the same. R_content also lost
-  coherence at layers 10 and 16 (85 to 86).
-- R_sharp (judge-filtered world-class vs skilled, essays) behaves like E at removal: layer 10 2 / 29 (E 2 / 29),
-  layer 16 1 / 30 (E 5 / 37), both with 29 ties and no coherence cost; at layer 6 addition it loses (6 / 12,
-  coherence 85.6), where E wins 22 / 3. With E projected out the removal effect shrinks to 7 / 18 and 6 / 20
-  (0.28, 0.23; equal-coherence 0.14 and 0.08) and is no longer different from E (p 0.06, 0.31) or clearly from
-  random (p 0.79, 0.04). Its cosine with E is 0.41 to 0.58, so most of this is E again, and the filter kept only
-  75 pairs with a judge that barely separates the arms (section above), so the remainder is noisy.
-- R_wide (20 world-class paraphrases vs 20 novice paraphrases) is the first reliable role vector and the only
-  one that steers on its own. Removal (pushing toward "novice") loses almost every pair: 0 / 56 and 2 / 55 with
-  3 to 4 ties, far below E (2 / 29, 5 / 37) and random (13 / 27, 20 / 21), and this survives projecting E out
-  (0 / 57, 0 / 54). The essays are not broken: mean coherence 80 (10th percentile 72, no truncation), and the
-  lowest-scored one is a plain, correct, student-style essay ("It helps employees stay healthy and happy ...").
-  The novice direction turns the prose plain and simple, the coherence judge marks that down, and the panel
-  never picks it. Addition at layer 6 wins 12 / 5 (0.71; E 22 / 3, random 16 / 25, p 0.04 vs random) but the
-  perp version does not (6 / 9), so the gain from adding R_wide at layer 6 is its E component.
-- So R_wide-minus-E is a direction that is not effort and that the judges care about, but in one direction
-  only: removing it makes writing worse (simpler), adding it does nothing. It is a competence or register
-  direction, not the "world-class essayist identity" we were looking for. Whether it adds anything over E when
-  added at layers 10 to 16, or at smaller doses, was not tested.
+- R_act (pretend-and-act-as vs the direct cue) and R_content (essayist vs other world-class profession) do nothing.
+  Every cell sits at the random level (p vs random 0.25 to 1.0, except R_act perp at layer 16, 2 / 12 with 46 ties),
+  and all removal cells differ from the E cell. Their perps are the same. R_content also loses coherence at layers
+  10 and 16 (85 to 86).
+- R_sharp (judge-filtered world-class vs skilled, essays) behaves like E at removal. Layer 10 gives 2 / 29 (E 2 /
+  29) and layer 16 gives 1 / 30 (E 5 / 37), both with 29 ties and no coherence cost. At layer 6 addition it loses (6
+  / 12, coherence 85.6) where E wins 22 / 3. With E projected out the removal effect shrinks to 7 / 18 and 6 / 20
+  (0.28 and 0.23, equal-coherence 0.14 and 0.08). Those cells no longer differ from E (p 0.06, 0.31) and differ from
+  random only at layer 16 (p 0.79, 0.04). Its cosine with E is 0.41 to 0.58, so most of this is E again. The filter
+  kept only 75 pairs, chosen by a judge whose mean scores differ by 1 point between the arms, so the remainder is
+  noisy.
+- R_wide (20 world-class paraphrases vs 20 novice paraphrases) is the first reliable role vector and the only one
+  that steers on its own. Removal, which pushes toward "novice", loses 0 / 56 and 2 / 55 with 3 to 4 ties, below E
+  (2 / 29, 5 / 37) and random (13 / 27, 20 / 21). This survives projecting E out (0 / 57, 0 / 54). The essays are
+  not broken. Mean coherence is 80 (10th percentile 72, no truncation), and the lowest-scored one is a correct
+  student-style essay ("It helps employees stay healthy and happy ..."). The novice direction makes the prose plain
+  and simple, the coherence judge marks that down, and the panel never picks it. Addition at layer 6 wins 12 / 5
+  (0.71, where E gives 22 / 3 and random 16 / 25, p 0.04 vs random), but the perp version does not (6 / 9), so the
+  gain from adding R_wide at layer 6 is its E component.
+- So R_wide-minus-E is a direction that is not effort and that the judges respond to, but only when removed.
+  Removing it makes the writing simpler and worse, adding it does nothing. It is a competence or register direction,
+  not the "world-class essayist identity" we were looking for. We did not test adding it at layers 10 to 16 or at
+  smaller doses.
 
 ## 5. Takeaways
 
-- The win-rate effects of the effort direction are not coherence effects. Random directions keep coherence
-  (section 1); the panel does track coherence closely wherever the two essays differ (section 2.1), but at equal
-  coherence removal still loses 0.00 of 99 pairs at layers 6 to 14 and addition at +0.1 still wins 0.90 of 40,
-  while random directions sit at 0.41 to 0.47 and null at 0.50.
-- The paper's own rubric coder sees the vector doing part of what the prompt does: argument depth and concrete
-  examples up when E is added, every content marker down when it is removed, plausibility flat. The prompt also
-  improves thesis framing and flow; the vector does not. Ablation under the exhortation is the one intervention
-  the coder marks as less plausible.
-- The role cue rides on the effort direction. "World-class" shifts the residual along E by half of the
-  exhortation's shift; the role vector steers like a weak E; the part of it that is not E does nothing at the
-  cleanest cell (layer 10 removal) and only damages at layer 16. An essay-built role vector is again mostly E
-  plus noise. A role direction separate from effort is not extractable with this recipe in this model, where the
-  role effect itself is 0.55 to 0.57.
-- Four more recipes (4.4): act-as-the-person and essayist-vs-other-profession give nothing; judge-filtered
-  world-class vs skilled is E again. World-class vs novice paraphrases gives the first reliable role vector
-  (split-half 0.70 to 0.87), and the part of it that is not E does steer: removing it makes the essay plain
-  and simple and loses 0 / 57 and 0 / 54 at layers 10 and 16, while adding it at layer 6 does nothing (6 / 9).
-  It is a competence direction with a downward lever only, not the role identity.
-- Cost this week: $1.08 rubric, $0.44 craft judge, $6.88 judging (420 + 1,560 pairs), $1.93 coherence, about
-  $2.65 vast (three instances, one dead on arrival). About $10.33 OpenRouter in all.
+- The win-rate effects of the effort direction are not coherence effects. Random directions keep coherence (section
+  1). The panel does follow coherence wherever the two essays differ (section 2.1), but at equal coherence removal
+  still loses 0.00 of 99 pairs at layers 6 to 14 and addition at +0.1 still wins 0.90 of 40, while random directions
+  sit at 0.41 to 0.47 and null at 0.50.
+- The paper's own rubric coder sees the vector doing part of what the prompt does. Argument depth and concrete
+  examples go up when E is added, every content marker goes down when it is removed, and plausibility stays flat.
+  The prompt also improves thesis framing and flow. The vector does not. Ablation under the exhortation is the one
+  intervention the coder marks as less plausible.
+- The role cue's trace is mostly the effort direction. "World-class" shifts the residual along E by half of the
+  exhortation's shift. The role vector steers like a weak E. The part of it that is not E does nothing at the
+  cleanest cell (layer 10 removal) and only damages at layer 16. An essay-built role vector is again mostly E plus
+  noise. This recipe does not give a role direction separate from effort in this model, where the role effect itself
+  is 0.55 to 0.57.
+- Of the four more recipes in 4.4, act-as-the-person and essayist-vs-other-profession give nothing, and
+  judge-filtered world-class vs skilled is E again. World-class vs novice paraphrases gives the first reliable role
+  vector (split-half 0.70 to 0.87), and the part of it that is not E does steer. Removing it makes the essay plain
+  and simple and loses 0 / 57 and 0 / 54 at layers 10 and 16. Adding it at layer 6 does nothing (6 / 9). It is a
+  competence direction that only works when removed, not the role identity.
+- This week cost $1.08 for the rubric coder, $0.44 for the craft judge, $6.88 for judging (420 + 1,560 pairs) and
+  $1.93 for coherence, about $10.33 on OpenRouter in all, plus about $2.65 on vast (three instances, one dead on
+  arrival).
