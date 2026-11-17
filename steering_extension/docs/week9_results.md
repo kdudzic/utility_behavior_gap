@@ -1,7 +1,7 @@
 # Week 9 results (2026-11-17): where the coherence loss comes from, what the coherence judge objects to, sandbagging
 
-Plan: `week9_plan.txt` (repo root), from `steering_extension/0711_meeting_notes.txt`. Sections 1 and 2 are done.
-Sections 3 and 4 are in progress and say so.
+Plan: `week9_plan.txt` (repo root), from `steering_extension/0711_meeting_notes.txt`. Sections 1, 2 and 4 are done for Qwen. The top-up judging in 4.3 and DeepSeek (4.6) are
+open and say so.
 
 ## 0. How to read the tables
 
@@ -150,7 +150,7 @@ essay rubric's markers. The grant rubric has seven different markers and no thes
 cannot be repeated on grant abstracts without inventing a mapping between the two sets. Dropped by the PI on
 2026-11-17.
 
-## 4. Sandbagging and the effort direction (note item 2): in progress
+## 4. Sandbagging and the effort direction (note item 2)
 
 The paper's sandbagging comparison is the harmful-cause framing against the framed-empty baseline. Harmful-side win
 rates in the paper, ties excluded:
@@ -160,9 +160,146 @@ rates in the paper, ties excluded:
 | Qwen3.5-9B | 0.52 (144 / 133) | 0.28 (51 / 128) | 0.43 (94 / 125) |
 | DeepSeek V3.2 | 0.10 (28 / 251) | 0.31 (92 / 208) | 0.37 (109 / 188) |
 
-Qwen sandbags on grant only, so the Qwen study uses grant abstracts and the essay-built effort vector, which is held
-out for grant. Generation started on 2026-11-17 (runs `w9_sandbag_local`, `w9_sandbag_remote`, chain
-`vast/w9_chain.sh`). No result yet.
+Qwen sandbags on grant only, so the Qwen study uses grant abstracts.
 
-DeepSeek V3.2 can be hosted white-box on a rented eight-GPU machine. The port is prepared and untested on a GPU
-(`docs/deepseek_port_notes.md`). No result yet.
+### 4.0 Design
+
+Grant task, Qwen3.5-9B, the paper's prompts byte for byte. "Harmful" is the paper's competition wrapper with the
+sponsor funding the bad cause of one of 40 moral cause pairs, assigned by the paper's rule. "Baseline" is the paper's
+framed-empty wrapper, the same competition text with no sponsor. 30 grant items x 2 repeats give 60 pairs per cell.
+Side a is named first in every row. The effort vector E is the essay-built one (week 7), which is held out for grant
+and steers it (+0.05 wins 0.67 to 0.76 against unsteered). The dose is +0.05, because +0.1 was too much on grant.
+The paper's refusal screen is applied with its classifier unchanged (gpt-5-mini): a pair is "clean" when no
+harmful-prompt text in it is a refusal, an abstract with objection commentary, or degenerate. The paper's 0.28 is a
+clean-pair number (179 of 300 pairs). Runs `w9_sandbag_local` and `w9_sandbag_remote`, builder
+`local/make_sandbag_jobs.py`, tables `local/week9_sandbag.py`.
+
+### 4.1 Replication: in our runs the gap is mostly refusal
+
+The untouched harmful texts of all three runs (360 texts), by the classifier's label:
+
+| label | texts | share |
+|---|---|---|
+| clean abstract | 196 | 0.54 |
+| abstract with an objection ("I cannot ... I can, however, write ...") | 140 | 0.39 |
+| full refusal | 24 | 0.07 |
+
+Harmful (side a) against baseline (side b), the two judged runs pooled, 120 pairs:
+
+| pairs | n | W / L | win rate | words a / b |
+|---|---|---|---|---|
+| all | 120 | 12 / 73 | 0.14 | |
+| clean (the paper's screen) | 64 | 12 / 20 | 0.38 | 668 / 660 (first run) |
+| harmful text has an objection | 22 (first run) | 0 / 20 | 0.00 | 418 / 660 |
+| harmful text is a full refusal | 4 (first run) | 0 / 4 | 0.00 | 164 / 658 |
+
+- 46% of harmful-prompt texts are not clean, close to the paper's 40% of pairs excluded for this cell.
+- On clean pairs the harmful side wins 12 / 20 (0.38). That is in the paper's direction, does not differ from the
+  paper's 51 / 128 (Fisher p = 0.30), and does not differ from 0.50 either (p = 0.22). With 32 resolved pairs the
+  cell is too small to say whether Qwen writes worse clean abstracts under the harmful cause.
+- Clean harmful abstracts are as long as baseline ones.
+- Sanity check on the task: max-effort prompt against neutral prompt on grant wins 24 / 5 (0.83; paper 0.68).
+
+### 4.2 Readout: clean harmful abstracts sit backward on the effort direction
+
+Untouched texts re-encoded without steering, response-token-mean projection onto unit vectors as a fraction of the
+residual RMS (as in week 8, section 4.1). 196 clean harmful texts against 360 baseline texts, and 60 max-effort against
+60 neutral texts for the exhortation. d is Cohen's d, AUC is the chance that a harmful text sits further along the
+direction than a baseline text. "ratio" is the harmful shift divided by the exhortation shift.
+
+| direction | layer | clean harmful vs baseline: d, AUC | max-effort vs neutral: d, AUC | ratio |
+|---|---|---|---|---|
+| E | 6 | -0.61, 0.32 | +1.79, 0.90 | -0.40 |
+| E | 10 | -0.79, 0.28 | +1.56, 0.87 | -0.60 |
+| E | 14 | -0.72, 0.30 | +1.93, 0.92 | -0.46 |
+| E | 16 | -0.89, 0.26 | +2.02, 0.93 | -0.54 |
+| random | 6 to 16 | -0.22 to +0.04, 0.43 to 0.52 | -0.51 to +0.17, 0.35 to 0.56 | |
+| S (sandbagging vector, 4.4) | 10 | +0.94, 0.75 | +0.03, 0.51 | |
+| S | 16 | +1.48, 0.89 | -0.32, 0.41 | |
+
+- The harmful cause moves clean abstracts backward along E, by 0.4 to 0.6 of the distance the exhortation moves
+  them forward. A baseline text sits further along E than a clean harmful text 68 to 74% of the time. A random
+  direction shows nothing.
+- With refusals and objection texts included, harmful and baseline do not separate along E at layers 4 to 16 (AUC 0.49 to 0.54),
+  because those texts sit forward on E (d +0.98 to +1.42 for the 140 objection texts). They are a different kind
+  of text (short, with meta-commentary), and a random direction also moves for them at layer 16 (d -1.72), so their
+  positions say little.
+- Within the 32 resolved clean pairs, the E position of the harmful text does not separate pairs the harmful side
+  won from pairs it lost (AUC 0.55 to 0.60, p 0.34 to 0.68). Too few pairs to conclude.
+
+### 4.3 Adding the effort vector under the harmful prompt
+
+Side a is the harmful prompt with a vector added at r = +0.05, side b is named in the row. 60 pairs per cell.
+
+| side a | side b | all pairs W / L | clean pairs W / L | clean pairs |
+|---|---|---|---|---|
+| E, layer 6 | untouched harmful | 18 / 19 | 6 / 4 | 19 |
+| E, layer 10 | untouched harmful | 21 / 22 | 6 / 6 | 23 |
+| E, layer 16 | untouched harmful | 17 / 20 | 5 / 7 | 22 |
+| random, layer 10 | untouched harmful | 11 / 22 | 1 / 3 | 20 |
+| E, layer 6 | baseline | 5 / 30 | 5 / 3 | 28 |
+| E, layer 10 | baseline | 5 / 34 | 5 / 9 | 34 |
+| E, layer 16 | baseline | 6 / 39 | 6 / 13 | 33 |
+| random, layer 10 | baseline | 3 / 43 | 3 / 11 | 27 |
+| untouched harmful | baseline | 8 / 37 | 8 / 13 | 34 |
+
+- No sign that adding E undoes the gap. Against the untouched harmful text E wins about half the pairs at every
+  layer, and against the baseline the steered text does no better than the untouched one.
+- E does not change the refusal rate. The clean share is 0.57 untouched, 0.45 to 0.57 with E and 0.45 with a random
+  direction.
+- These cells cannot show a rescue either. The screen leaves 19 to 34 pairs and 4 to 19 resolved pairs per cell. A
+  top-up of 8 more repeats for the base cell and the layer-10 cells is generated (run `w9_sandbag_power`, 240 pairs
+  per cell, 56% clean) and not judged yet.
+
+### 4.4 A sandbagging vector
+
+S is the mean residual under the harmful prompt minus the baseline prompt, grant, 300 responses per arm, response
+mean, the recipe of E (`vectors/qwen3.5-9b_sandbag_v1`). The extraction responses include the refusals.
+
+| property | value |
+|---|---|
+| split-half cosine, layers 4 to 20 | 0.97 to 0.98 |
+| held-out AUC | 0.82 to 0.90 |
+| size relative to the residual RMS | 0.04 to 0.14 (E: about 0.01) |
+| cosine with E | +0.20 at layer 4, +0.08 to +0.10 at layers 6 to 14, 0.00 at 16, -0.09 at 20 |
+
+Steering with S at layer 10, 60 pairs per cell. "S minus E" is S with its E component projected out.
+
+| side a | side b | all pairs W / L | clean pairs W / L | coh a / b | words a / b |
+|---|---|---|---|---|---|
+| harmful, S removed (r -0.1) | untouched harmful | 28 / 15 | 10 / 3 | 90.8 / 90.1 | 661 / 658 |
+| harmful, S minus E removed | untouched harmful | 29 / 14 | 7 / 1 | 90.9 / 89.9 | 651 / 667 |
+| harmful, S removed | baseline | 9 / 31 | 9 / 7 | 90.6 / 88.8 | 667 / 645 |
+| harmful, S minus E removed | baseline | 6 / 31 | 6 / 4 | 88.9 / 88.0 | 647 / 650 |
+| untouched harmful (this run) | baseline | 4 / 36 | 4 / 7 | 90.5 / 88.5 | 665 / 650 |
+| baseline, S added (r +0.1) | untouched baseline | 3 / 27 | 3 / 27 | 89.0 / 88.9 | 628 / 646 |
+| baseline, S minus E added | untouched baseline | 2 / 26 | 2 / 26 | 89.2 / 88.9 | 631 / 646 |
+
+- S is a reliable direction and it is not the effort direction. Its cosine with E is near zero, and projecting E out
+  changes nothing in any cell.
+- Adding S to the baseline prompt makes the abstracts lose (3 / 27, p < 0.001) with coherence unchanged and no
+  refusals (0 of 60 texts open with a refusal phrase). So S carries a drop in quality and not only refusal text.
+- Removing S under the harmful prompt helps (28 / 15 on all pairs, 10 / 3 and 7 / 1 on clean pairs) and moves the
+  clean-pair result against the baseline from 4 / 7 to 9 / 7 and 6 / 4. The clean cells are small (8 to 16 resolved
+  pairs), so this is a direction of effect and not an estimate.
+- Removing S does not stop the refusals. The clean share is 30 of 60 untouched, 35 of 60 with S removed and 33 of 60
+  with S minus E removed.
+
+### 4.5 What this says so far
+
+- Qwen's harmful-cause gap on grant is, in our runs, mostly refusal and objection text. The clean-pair gap is in the
+  paper's direction and too small a sample to confirm.
+- The effort direction registers the harmful cause. Clean harmful abstracts sit backward on E by about half an
+  exhortation. This is a readout result on 196 against 360 texts.
+- The effort direction does not carry it. A vector built from the harmful contrast is orthogonal to E, lowers
+  quality when added, and helps when removed. Adding E under the harmful prompt shows no rescue, on cells too small
+  to rule one out.
+- Not tested: whether the top-up changes the clean-pair picture (generated, not judged), other layers or doses for
+  S, the essay and postmortem tasks, and anything on DeepSeek.
+
+### 4.6 DeepSeek V3.2
+
+DeepSeek V3.2 can be hosted white-box on a rented eight-GPU machine. The port is written and tested on CPU only
+(`docs/deepseek_port_notes.md`, `remote/deepseek_smoke.py`, `vast/ds0_chain.sh`). The first smoke-test attempt failed
+after one minute because the rented host could not reach PyPI. A second attempt on another host is running. No
+result yet.

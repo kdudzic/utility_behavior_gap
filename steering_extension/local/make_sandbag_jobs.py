@@ -58,6 +58,7 @@ def main() -> None:
     ap.add_argument("--task", default="grant_proposal_abstract")
     ap.add_argument("--items", type=int, default=30)
     ap.add_argument("--repeats", type=int, default=2)
+    ap.add_argument("--repeat-start", type=int, default=0, help="first repeat index (for top-up runs that extend an earlier run)")
     ap.add_argument("--cell", action="append", default=[], help="KEY:LAYER:R:PROMPT with PROMPT in harmful|empty, e.g. E:10:0.05:harmful")
     ap.add_argument("--bridge", action="store_true", help="for harmful cells also pair the steered text with the untouched empty text")
     ap.add_argument("--effort-ref", action="store_true", help="also generate untouched max-effort vs framed-neutral pairs")
@@ -76,7 +77,7 @@ def main() -> None:
         cells.append({"key": key, "layer": L, "r": float(r), "prompt": prompt,
                       "steer": {"vector": vec_rel, "key": key, "layer": L, "coef": float(r) * rms / vnorm, "mode": "response", "r": float(r), "rms_norm": rms, "vector_norm": vnorm}})
     jobs = []
-    for rep in range(args.repeats):
+    for rep in range(args.repeat_start, args.repeat_start + args.repeats):
         for pos, row in enumerate(pool[: args.items]):
             task = row["task"]
             cause = cause_for(causes, len(pool), pos, rep)

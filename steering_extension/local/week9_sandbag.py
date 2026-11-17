@@ -158,11 +158,29 @@ def main() -> None:
             M.to_csv(args.out / "sandbag_proj_vs_effort.csv", index=False)
             print("\n== B2. the same shift next to the exhortation shift (max-effort minus neutral, grant)")
             print(M[["key", "layer", "diff_sandbag", "cohen_d_sandbag", "auc_sandbag", "diff_exh", "cohen_d_exh", "auc_exh", "sandbag_over_exh"]].round(4).to_string(index=False))
+        # the same contrast for harmful texts the refusal screen labels clean (refusals are a different kind of text)
+        lab, tsha = {}, {}
+        for rd in rds:
+            lab.update({r["text_sha"]: r["label"] for r in load(rd / "refusal_labels.jsonl")})
+            tsha.update({(rd.name, g["output_id"]): sha(g.get("output_text") or "") for g in load(rd / "generations.jsonl")})
+        Q["label"] = [lab.get(tsha.get((r, o))) if c == "harmful" else "" for r, o, c in zip(Q.run, Q.output_id, Q.condition)]
+        n_lab = Q[Q.condition == "harmful"].drop_duplicates(["run", "output_id"]).label.value_counts(dropna=False).to_dict()
+        print("\nrefusal labels of all untouched harmful texts with projections:", n_lab)
+        for name in ("clean", "partial_refusal"):
+            Qc = Q[(Q.condition != "harmful") | (Q.label == name)]
+            Sc = contrast(Qc, "harmful", "framed_empty")
+            if len(Sc):
+                Sc.to_csv(args.out / f"sandbag_proj_{name}_harmful_vs_empty.csv", index=False)
+                Mc = Sc.merge(E, on=["key", "layer"], suffixes=("_sandbag", "_exh")) if len(E) else Sc
+                if len(E):
+                    Mc["sandbag_over_exh"] = Mc.diff_sandbag / Mc.diff_exh
+                print(f"\n== B1b. {name} harmful texts minus framed-empty")
+                print(Mc.round(4).to_string(index=False))
         # within untouched harmful vs empty pairs: E projection of the harmful text, pairs won vs lost by the harmful side
         H = Q[(Q.condition == "harmful")].copy()
         H["pair_uid"] = H.output_id.str.rsplit("::", n=1).str[0]
         H = H.merge(P[["run", "pair_uid", "outcome", "screened"]], on=["run", "pair_uid"])
-        H = H[~H.screened & H.outcome.isin(["W", "L"])]
+        H = H[~H.screened & H.outcome.isin(["W", "L"]) & H.key.isin(["E", "S", "rand0"])]
         rows = []
         for (k, l), g in H.groupby(["key", "layer"]):
             a, b = g[g.outcome == "W"].p, g[g.outcome == "L"].p
