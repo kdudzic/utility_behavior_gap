@@ -132,17 +132,21 @@ def _slice_hook(hook, lo: int, hi: int):
 
 def generate_with_oom_fallback(loaded: LoadedModel, batch: list[dict], *, temperature: float, max_tokens: int, hook, layer_idx) -> list[dict]:
     """generate_batch, but on CUDA out-of-memory split the batch in two and retry (down to single requests).
-    Matters for models that fill the GPUs almost completely (DeepSeek V3.2): one long outlier must not kill a run."""
+    Matters for models that fill the GPUs almost completely (DeepSeek V3.2): one long outlier must not kill a run.
+    The retry happens outside the except block: a live exception keeps the failed batch's tensors referenced."""
+    import gc
+
     try:
         return generate_batch(loaded, batch, temperature=temperature, max_tokens=max_tokens, hook=hook, layer_idx=layer_idx)
     except torch.OutOfMemoryError:
         if len(batch) == 1:
             raise
-        torch.cuda.empty_cache()
-        mid = len(batch) // 2
-        print(f"[oom] batch of {len(batch)} did not fit; retrying as {mid} + {len(batch) - mid}", flush=True)
-        return (generate_with_oom_fallback(loaded, batch[:mid], temperature=temperature, max_tokens=max_tokens, hook=_slice_hook(hook, 0, mid), layer_idx=layer_idx)
-                + generate_with_oom_fallback(loaded, batch[mid:], temperature=temperature, max_tokens=max_tokens, hook=_slice_hook(hook, mid, len(batch)), layer_idx=layer_idx))
+    gc.collect()
+    torch.cuda.empty_cache()
+    mid = len(batch) // 2
+    print(f"[oom] batch of {len(batch)} did not fit; retrying as {mid} + {len(batch) - mid}", flush=True)
+    return (generate_with_oom_fallback(loaded, batch[:mid], temperature=temperature, max_tokens=max_tokens, hook=_slice_hook(hook, 0, mid), layer_idx=layer_idx)
+            + generate_with_oom_fallback(loaded, batch[mid:], temperature=temperature, max_tokens=max_tokens, hook=_slice_hook(hook, mid, len(batch)), layer_idx=layer_idx))
 
 
 def success_row(req: dict, gen: dict, *, model_name: str, temperature: float, latency_s: float, max_tokens: int) -> dict:

@@ -66,9 +66,10 @@ def respond_and_capture(loaded, rows: list[dict], *, max_new_tokens: int, temper
     m_gen1 = torch.zeros_like(full_mask, dtype=torch.float)
     m_gen1[:, prompt_len] = resp_mask[:, 0].float()
     masks["gen1"] = m_gen1
+    fwd_kwargs = {"use_cache": False} if getattr(loaded, "family", "default") != "default" else {}  # Qwen call unchanged
     with ResidualCapture(loaded.layers) as cap:
         cap.masks = masks
-        backbone(input_ids=out, attention_mask=full_mask.long())
+        backbone(input_ids=out, attention_mask=full_mask.long(), **fwd_kwargs)
     L = len(cap.sq_norm_sums)
     readouts = {}
     for name, mask in masks.items():
@@ -82,18 +83,17 @@ def respond_and_capture(loaded, rows: list[dict], *, max_new_tokens: int, temper
 
 
 def capture_with_oom_fallback(loaded, rows: list[dict], *, max_new_tokens: int, temperature: float):
-    """respond_and_capture, but on CUDA out-of-memory split the batch in two and retry (down to single prompts)."""
+    """respond_and_capture, or None when the batch does not fit on the GPUs. The retry must happen outside the
+    except block: a live exception keeps the failed batch's tensors referenced and the memory cannot be freed."""
+    import gc
+
     try:
         return respond_and_capture(loaded, rows, max_new_tokens=max_new_tokens, temperature=temperature)
     except torch.OutOfMemoryError:
-        if len(rows) == 1:
-            raise
-        torch.cuda.empty_cache()
-        mid = len(rows) // 2
-        print(f"[oom] batch of {len(rows)} did not fit; retrying as {mid} + {len(rows) - mid}", flush=True)
-        a = capture_with_oom_fallback(loaded, rows[:mid], max_new_tokens=max_new_tokens, temperature=temperature)
-        b = capture_with_oom_fallback(loaded, rows[mid:], max_new_tokens=max_new_tokens, temperature=temperature)
-        return ({k: torch.cat([a[0][k], b[0][k]], dim=1) for k in a[0]}, torch.cat([a[1], b[1]], dim=1), torch.cat([a[2], b[2]], dim=0), a[3] + b[3])
+        pass
+    gc.collect()
+    torch.cuda.empty_cache()
+    return None
 
 
 def main() -> None:
@@ -120,15 +120,24 @@ def main() -> None:
     rows = [r for i, r in enumerate(rows) if i % args.num_shards == args.shard]
     loaded = load_model(args.model)
     resp_log = args.out_dir / f"responses.shard{args.shard}.jsonl"
+    resp_log.unlink(missing_ok=True)  # a rerun starts over; do not keep responses of an aborted attempt
     rows.sort(key=lambda r: len(r["prompt"]))
     per_resp: dict[str, list[torch.Tensor]] = {k: [] for k in READOUTS}
     sq_all: list[torch.Tensor] = []
     n_tok_all: list[torch.Tensor] = []
     meta_rows: list[dict] = []
     tail_tokens = None
-    for i in range(0, len(rows), args.batch_size):
-        batch = rows[i : i + args.batch_size]
-        readouts, sq, n_resp, texts = capture_with_oom_fallback(loaded, batch, max_new_tokens=args.max_new_tokens, temperature=args.temperature)
+    bs, i = args.batch_size, 0
+    while i < len(rows):
+        batch = rows[i : i + bs]
+        res = capture_with_oom_fallback(loaded, batch, max_new_tokens=args.max_new_tokens, temperature=args.temperature)
+        if res is None:  # out of GPU memory: keep the smaller batch size for the rest of the run
+            if bs == 1:
+                raise RuntimeError("a single prompt does not fit on the GPUs")
+            bs = max(1, bs // 2)
+            print(f"[oom] batch did not fit; batch size is now {bs}", flush=True)
+            continue
+        readouts, sq, n_resp, texts = res
         if tail_tokens is None:
             ids0 = chat_input_ids(loaded, batch[0].get("system_prompt", ""), batch[0]["prompt"])
             tail_tokens = {f"tail{k}" if k > 1 else "astart": loaded.tokenizer.decode([ids0[-k]]) for k in range(1, TAIL_K + 1)}
@@ -139,7 +148,8 @@ def main() -> None:
         for r, t, c in zip(batch, texts, n_resp.tolist()):
             meta_rows.append({"contrast": r["contrast"], "arm": r["arm"], "cid": r["cid"], "response_tokens": int(c)})
         append_jsonl(resp_log, [{**r, "response": t, "response_tokens": int(c)} for r, t, c in zip(batch, texts, n_resp.tolist())])
-        print(f"{i+len(batch)}/{len(rows)}", flush=True)
+        i += len(batch)
+        print(f"{i}/{len(rows)}", flush=True)
     tensors = {k: torch.cat(per_resp[k], dim=1).contiguous() for k in READOUTS}  # (L, N, d) fp16
     tensors["sq_norm_sum"] = torch.cat(sq_all, dim=1).contiguous()  # (L, N)
     tensors["n_resp_tokens"] = torch.cat(n_tok_all, dim=0).contiguous()  # (N,)

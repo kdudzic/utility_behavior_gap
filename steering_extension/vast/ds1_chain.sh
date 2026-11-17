@@ -14,6 +14,8 @@
 #   5. project     untouched texts of both base runs onto E, S, S_perp, rand0 at 9 layers
 #   6. steer       generate runs/ds_steer (14 cells x 60 pairs on essays, layers 12 / 20 / 30)
 # Steps 1 and 2 do not depend on each other; 4 to 6 need step 3. A failed step does not stop the independent ones.
+# Each step is tried up to DS1_TRIES times (default 3; the model load fails now and then) and is skipped when its
+# output already exists, so the script can be rerun. Resume mode: see DS1_WAIT_FOR below.
 # Marker: logs/ds1.DONE when every step succeeded, else logs/ds1.FAILED listing the failed steps.
 # The instance stops itself afterwards (GPU billing ends, disk kept): after a grace period of DS1_GRACE_MIN minutes
 # (default 30) that ends early when the laptop touches logs/ds1.pulled, and after DS1_MAX_HOURS (default 7) from the
@@ -60,15 +62,32 @@ stop_instance() {
 WATCHDOG=$!
 log "DS1 chain start: model=$MODEL max_hours=$MAX_HOURS gpus=$GPUS_PER_SHARD cap=${STEER_MAX_MEMORY_GIB}GiB"
 
+# DS1_WAIT_FOR=<marker stem>: resume mode. Wait for an earlier chain run on this instance to write its marker
+# (logs/ds1.DONE or ds1.FAILED), end its grace loop and watchdog so the instance stays up, then redo only the steps
+# whose outputs are missing. This run then owns the stop.
+if [[ -n "${DS1_WAIT_FOR:-}" ]]; then
+  log "resume mode: waiting for $L/${DS1_WAIT_FOR}.DONE or .FAILED"
+  until [[ -f "$L/${DS1_WAIT_FOR}.DONE" || -f "$L/${DS1_WAIT_FOR}.FAILED" ]]; do sleep 20; done
+  pkill -f '^bash steering_extension/vast/ds1_chain\.sh' || true   # not the tmux server, not this script (other name)
+  sleep 2
+  mkdir -p "$L/first_pass"; mv -f "$L/${DS1_WAIT_FOR}.DONE" "$L/${DS1_WAIT_FOR}.FAILED" "$L/first_pass/" 2>/dev/null || true
+  log "earlier chain finished; resuming the missing steps"
+fi
+
 FAILED=()
-step() {  # step <name> <command...>
-  local name="$1"; shift
-  local t0; t0=$(date +%s)
-  log "---- step $name: start"
-  if "$@" >> "$L/ds1_$name.log" 2>&1; then
-    log "---- step $name: ok after $(( ( $(date +%s) - t0 ) / 60 )) min"; return 0
-  fi
-  log "---- step $name: FAILED after $(( ( $(date +%s) - t0 ) / 60 )) min; see $L/ds1_$name.log"
+TRIES="${DS1_TRIES:-3}"
+step() {  # step <name> <done-test file or ''> <command...>   (skipped when the file exists; up to TRIES attempts)
+  local name="$1" done_file="$2"; shift 2
+  if [[ -n "$done_file" && -s "$done_file" ]]; then log "---- step $name: already done ($done_file)"; return 0; fi
+  local t0 try; t0=$(date +%s)
+  for ((try=1; try<=TRIES; try++)); do
+    log "---- step $name: start (attempt $try of $TRIES)"
+    if "$@" >> "$L/ds1_$name.log" 2>&1; then
+      log "---- step $name: ok after $(( ( $(date +%s) - t0 ) / 60 )) min"; return 0
+    fi
+    log "---- step $name: attempt $try failed after $(( ( $(date +%s) - t0 ) / 60 )) min; see $L/ds1_$name.log"
+    sleep 30   # let the GPUs release memory; the model load is tight (8 layers + a 7 GiB temporary on a 95 GiB card)
+  done
   FAILED+=("$name"); return 1
 }
 
@@ -94,14 +113,16 @@ project() {
       --run-dir "outputs/steering/runs/$r" --conditions harmful,framed_empty,effort,neutral --vectors "$VDIR/vectors.safetensors" \
       --keys E,S,S_perp,rand0 --layers "$PROJ_LAYERS" --batch-size "${DS1_PROJ_BATCH:-4}" || return 1
   done
+  date -Is > "$L/ds1_project.ok"
 }
 
-if step gate gate; then
-  step base_essay gen ds_base_essay "${DS1_ESSAY_BATCH:-48}"
-  step base_grant gen ds_base_grant "${DS1_GRANT_BATCH:-24}"
-  if step extract extract && step cells bash steering_extension/local/week9_ds_cells.sh steer; then
-    step project project
-    step steer gen ds_steer "${DS1_ESSAY_BATCH:-48}"
+R=outputs/steering/runs
+if step gate "$L/ds0.DONE" gate; then
+  step base_essay "$R/ds_base_essay/generations.jsonl" gen ds_base_essay "${DS1_ESSAY_BATCH:-48}"
+  step base_grant "$R/ds_base_grant/generations.jsonl" gen ds_base_grant "${DS1_GRANT_BATCH:-24}"
+  if step extract "$VDIR/vectors.safetensors" extract && step cells "$R/ds_steer/generation_jobs.jsonl" bash steering_extension/local/week9_ds_cells.sh steer; then
+    step project "$L/ds1_project.ok" project
+    step steer "$R/ds_steer/generations.jsonl" gen ds_steer "${DS1_ESSAY_BATCH:-48}"
   fi
 fi
 
