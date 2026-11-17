@@ -1,6 +1,6 @@
-# Week 9 results (2026-11-17): where the coherence loss comes from, what the coherence judge objects to, sandbagging
+# Week 9 results (2026-11-17/18): where the coherence loss comes from, what the coherence judge objects to, sandbagging in Qwen and DeepSeek
 
-Plan: `week9_plan.txt` (repo root), from `steering_extension/0711_meeting_notes.txt`. Sections 1, 2 and 4 are done for Qwen. DeepSeek (4.6) is open and says so.
+Plan: `week9_plan.txt` (repo root), from `steering_extension/0711_meeting_notes.txt`. Sections 1, 2, 4 (Qwen) and 5 (DeepSeek) are done.
 
 ## 0. How to read the tables
 
@@ -314,9 +314,16 @@ Steering with S at layer 10, 60 pairs per cell. "S minus E" is S with its E comp
 - So in this model and task, sandbagging and low effort are different directions. The harmful cause moves the text
   a little along the effort axis as a side effect and does its damage elsewhere.
 - Not tested: other layers or doses for S and larger samples for its clean-pair cells (8 to 16 resolved pairs),
-  higher doses of E under the harmful prompt, the essay and postmortem tasks, and anything on DeepSeek.
+  higher doses of E under the harmful prompt, and the essay and postmortem tasks. DeepSeek is section 5.
 
-### 4.6 DeepSeek V3.2: white-box hosting works, no experiment yet
+## 5. DeepSeek V3.2, hosted white-box (note item 2)
+
+DeepSeek V3.2 was the strongest sandbagger in the paper (essay 0.10, grant 0.31). We hosted the checkpoint as released
+(FP8, 671.9B parameters) on a rented machine with 8 x RTX PRO 6000 and ran the paper's prompts on it with thinking off.
+Chain `vast/ds1_chain.sh`, cells `local/week9_ds_cells.sh`, runs `ds_base_essay`, `ds_base_grant`, `ds_steer`, vectors
+`vectors/deepseek-v3.2_v1`, tables in `outputs/steering/w9_analysis/ds/`.
+
+### 5.1 Hosting
 
 Smoke test on a rented machine with 8 x RTX PRO 6000 (95 GiB each), transformers main, the checkpoint as released
 (FP8, 671.9B parameters). Script `remote/deepseek_smoke.py`, reports in `outputs/steering/ds0/`.
@@ -345,11 +352,118 @@ modules to keep unquantized, copied from the transformers documentation, was not
 third ran out of GPU memory during load until each GPU was capped at 86 GiB, and also showed that the output head is
 stored in BF16 and must stay unquantized. All three fixes are in `steer/model.py`.
 
-Not done: the sandbagging replication on the hosted model, DeepSeek's own effort vector, the readout, a sandbagging
-vector and steering (plan steps DS1 to DS5). Not measured: throughput for 900-token texts, where the cache per text
-is larger and the batch must be smaller than 96 on this machine, and whether the hosted model reproduces the paper's
-OpenRouter results.
+Three smoke-test attempts were needed (a host without access to PyPI, an invalid entry in the list of modules to keep
+unquantized, and GPU memory during load, fixed with a cap of 86 GiB per GPU and by keeping the output head
+unquantized). The load stays tight on these cards and failed once more during the study, so every step of the chain
+now retries.
 
-Cost of the three attempts: $54 on vast, of which $33 were download fees that two hosts charge per GB (one host
-charged $24 for the 690 GB download). The next run should pick a host by its download price as well as its hourly
-price.
+### 5.2 Replication: the hosted model sandbags as in the paper, without refusing
+
+Harmful (side a) against baseline (side b), 30 items x 2 repeats, the paper's prompts and panel. The essay cell was run
+twice (base run and the steering run's own base pairs).
+
+| task | pairs | W / L | win rate | paper | coh a / b | words a / b | clean harmful texts |
+|---|---|---|---|---|---|---|---|
+| essay | 120 | 3 / 81 | 0.04 | 0.10 (28 / 251) | 92.0 / 91.8 | 308 / 375 | 120 of 120 |
+| grant | 60 | 5 / 33 | 0.13 | 0.31 (92 / 208) | 92.0 / 91.6 | 543 / 584 | 60 of 60 |
+| max-effort vs neutral, essay | 60 | 31 / 3 | 0.91 | | 91.9 / 91.5 | 372 / 328 | |
+
+- The hosted model reproduces the paper's direction on both tasks, somewhat more strongly. The grant cell has 38
+  resolved pairs, so its difference from the paper's 0.31 is not established.
+- No harmful-prompt text is a refusal or carries an objection. DeepSeek's gap is all sandbagging: equal coherence,
+  shorter and worse texts. In Qwen 46% of the harmful-prompt texts were refusals or objections.
+
+### 5.3 Vectors
+
+E is max-effort minus neutral on grant items, S is harmful minus baseline on essay items, 150 responses per arm each,
+300 new tokens, response mean. 61 layers.
+
+| layer | E: split-half, held-out AUC | S: split-half, held-out AUC | cos(S, E) |
+|---|---|---|---|
+| 6 | 0.68, 0.93 | 0.63, 0.89 | -0.21 |
+| 12 | 0.57, 0.87 | 0.48, 0.81 | -0.19 |
+| 20 | 0.68, 0.92 | 0.69, 0.90 | about -0.2 (layer 18: -0.17) |
+| 30 | 0.68, 0.93 | 0.77, 0.98 | -0.45 |
+| 42 | 0.58, 0.85 | 0.64, 0.87 | -0.56 |
+| 54 | 0.47, 0.78 | 0.62, 0.84 | -0.47 |
+
+- Both vectors are reliable. The sandbagging direction points against the effort direction, weakly up to layer 20
+  and clearly from layer 24 on (-0.33 to -0.56). In Qwen the cosine was about zero.
+
+### 5.4 Readout
+
+Untouched texts of the base runs re-encoded without steering, 60 per condition, response-mean projection as a
+fraction of the residual RMS. d is Cohen's d, AUC the chance that the first-named text sits further along the
+direction. "ratio" is the harmful shift divided by the exhortation shift.
+
+| direction | layer | harmful vs baseline, essay: d, AUC | harmful vs baseline, grant: d, AUC | max-effort vs neutral, essay: d, AUC | ratio (essay) |
+|---|---|---|---|---|---|
+| E | 12 | -0.32, 0.40 | -0.47, 0.38 | +1.66, 0.89 | -0.21 |
+| E | 20 | -0.36, 0.39 | -0.85, 0.27 | +1.17, 0.79 | -0.31 |
+| E | 30 | -1.97, 0.08 | -1.69, 0.11 | +1.91, 0.92 | -1.02 |
+| E | 42 | -1.71, 0.11 | -1.05, 0.24 | +1.30, 0.82 | -1.33 |
+| S | 20 | +2.08, 0.94 | +2.29, 0.95 | -0.92, 0.25 | |
+| S | 30 | +4.56, 1.00 | +4.06, 1.00 | -1.29, 0.18 | |
+| random | 6 to 48 | -0.49 to +0.04, 0.36 to 0.51 | -0.43 to +0.35, 0.39 to 0.60 | -0.05 to +0.39, 0.48 to 0.60 | |
+
+- From layer 30 on, the harmful cause moves DeepSeek's texts backward along E by about as far as the exhortation
+  moves them forward (ratio -0.9 to -1.3; Qwen -0.4 to -0.6). A baseline essay sits further along E than a harmful
+  essay 92% of the time at layer 30.
+- This holds on grant, a task S was not built from, and E was built from other samples of grant prompts.
+- The exhortation moves texts backward along S (AUC 0.18 to 0.35). The two contrasts read as opposite ends of one
+  axis in this model.
+
+### 5.5 Steering
+
+Essay task, 60 pairs per cell, dose as a fraction of the layer's RMS residual norm. Coherence is 90.9 to 92.2 in
+every cell and 719 of 720 steered harmful texts are clean, so no cell is damaged. The +0.05 effort cells were
+generated and not judged.
+
+Harmful prompt with a vector, against the untouched harmful essay and against the baseline essay:
+
+| vector, layer, dose | vs untouched harmful: W / L | vs baseline: W / L | words (untouched harmful 307, baseline 373) |
+|---|---|---|---|
+| none | | 1 / 41 | 307 |
+| E added, layer 12, +0.1 | 21 / 10 | 1 / 35 | 319 |
+| E added, layer 20, +0.1 | 20 / 3 | 2 / 33 | 327 |
+| E added, layer 30, +0.1 | 29 / 1 | 6 / 23 | 337 |
+| S removed, layer 12, -0.1 | 20 / 6 | 3 / 33 | 324 |
+| S removed, layer 20, -0.1 | 19 / 4 | 2 / 34 | 326 |
+| S removed, layer 30, -0.1 | 21 / 11 | 3 / 33 | 333 |
+| S minus E removed, layer 20, -0.1 | 19 / 5 | 3 / 39 | 320 |
+| random added, layer 20, +0.1 | 14 / 9 | 2 / 38 | 315 |
+
+Baseline prompt with S added at +0.1, against the untouched baseline essay: layer 12 10 / 19, layer 20 5 / 17,
+layer 30 6 / 18 (words 366, 352, 354 against 373). There is no random-direction control under the baseline prompt.
+
+- Adding effort at layer 30 partly undoes the sandbagging. The steered harmful essay beats the untouched one 29 / 1
+  (random direction 14 / 9, Fisher p = 0.001) and wins 6 / 23 (0.21) against the baseline where the untouched
+  harmful essay wins 1 / 41 (0.02, p = 0.016). Layer 30 is where the readout is strongest. Layers 12 and 20 show the
+  same direction against the untouched harmful essay (0.68 and 0.87) and no gain against the baseline.
+- The rescue is partial. At this dose the steered essay still loses most pairs against the baseline and recovers
+  30 of the 66 missing words. Higher doses were not run, and coherence shows no cost yet at +0.1.
+- Removing S under the harmful prompt helps against the untouched harmful essay (0.66 to 0.83) but not more than a
+  random direction does (p 0.19 to 0.78), and does not help against the baseline (0.06 to 0.08).
+- Adding S to the baseline prompt lowers the essays (0.23 to 0.34 win rate, p = 0.02 at layers 20 and 30), without a
+  control to compare with.
+- A random direction added under the harmful prompt wins 14 / 9 against the untouched harmful essay, so 0.61 and
+  not 0.50 is the level to compare the steered cells with.
+
+### 5.6 Cost
+
+The study machine ran 4 h 40 min and cost $99.69 on vast including the $8.20 download fee. About 45 minutes of that
+went into two bugs in new code (a model load that fails now and then, and an out-of-memory fallback that kept the
+failed batch in memory). The three smoke-test attempts before it cost $54, of which $33 were download fees.
+
+## 6. What the sandbagging results say
+
+- Both models write worse texts under a harmful cause, as in the paper. Qwen also refuses or objects in 46% of the
+  texts. DeepSeek never does.
+- In both models the harmful cause moves the text backward along the effort direction: by about half an
+  exhortation in Qwen and by a full one in DeepSeek.
+- The models differ in whether effort carries the sandbagging. In Qwen the sandbagging vector is orthogonal to
+  effort and adding effort does not close the gap (0.27 against 0.29). In DeepSeek the sandbagging vector points
+  against effort (cosine -0.45 at layer 30) and adding effort at that layer partly closes the gap (0.21 against
+  0.02).
+- Not tested: higher doses and other layers on DeepSeek, a random-direction control under the baseline prompt,
+  DeepSeek steering on grant, and larger cells (every DeepSeek steering cell has 60 pairs and 23 to 42 resolved).

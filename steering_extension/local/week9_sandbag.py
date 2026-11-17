@@ -90,7 +90,7 @@ def cell_table(P: pd.DataFrame) -> pd.DataFrame:
             ref = same[same.cell == "harmful_vs_empty"]
         elif r.cell.startswith("steer_") and "rand" not in r.cell:
             side = r.cell.rsplit("_", 1)[1]
-            ref = same[same.cell.str.startswith("steer_rand") & same.cell.str.endswith(side)]
+            ref = same[same.cell.str.startswith("steer_rand") & same.cell.str.endswith(f"_{side}") & ~same.cell.str.endswith("_vs_empty")]
         else:
             ref = same.iloc[0:0]
         if len(ref) and (r.W + r.L) and (ref.iloc[0].W + ref.iloc[0].L):
