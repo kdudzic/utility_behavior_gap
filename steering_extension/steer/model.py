@@ -35,7 +35,9 @@ DSV32_THINK_END = "</think>"
 # transformers matches each entry with re.match (anchored at the start of the module name) or as a name suffix,
 # so the entries must be valid regular expressions; the doc page's glob form "*.self_attn..." raises re.error
 # (DS0 attempt 2, 2026-11-17).
-DSV32_FP8_SKIP = [r"model\.layers\.\d+\.mlp\.gate", r".*\.self_attn\.indexer\.weights_proj"]
+# lm_head is stored in BF16 in the checkpoint (no weight_scale_inv), so it must stay unquantized too
+# (DS0 attempt 3: "lm_head.weight_scale_inv MISSING").
+DSV32_FP8_SKIP = [r"model\.layers\.\d+\.mlp\.gate", r".*\.self_attn\.indexer\.weights_proj", r"lm_head"]
 
 
 def model_family(name: str) -> str:
