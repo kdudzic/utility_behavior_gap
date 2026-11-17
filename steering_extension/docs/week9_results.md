@@ -316,9 +316,40 @@ Steering with S at layer 10, 60 pairs per cell. "S minus E" is S with its E comp
 - Not tested: other layers or doses for S and larger samples for its clean-pair cells (8 to 16 resolved pairs),
   higher doses of E under the harmful prompt, the essay and postmortem tasks, and anything on DeepSeek.
 
-### 4.6 DeepSeek V3.2
+### 4.6 DeepSeek V3.2: white-box hosting works, no experiment yet
 
-DeepSeek V3.2 can be hosted white-box on a rented eight-GPU machine. The port is written and tested on CPU only
-(`docs/deepseek_port_notes.md`, `remote/deepseek_smoke.py`, `vast/ds0_chain.sh`). The first smoke-test attempt failed
-after one minute because the rented host could not reach PyPI. A second attempt on another host is running. No
-result yet.
+Smoke test on a rented machine with 8 x RTX PRO 6000 (95 GiB each), transformers main, the checkpoint as released
+(FP8, 671.9B parameters). Script `remote/deepseek_smoke.py`, reports in `outputs/steering/ds0/`.
+
+| check | result |
+|---|---|
+| download of 690 GB | 11 minutes |
+| load | 183 s, 669.9B parameters in FP8, 8 layers per GPU with a cap of 86 GiB per GPU |
+| generation with thinking off | 4 paper essay prompts, 392 to 416 tokens, all ended normally, fluent on-topic essays |
+| residual capture at layers 15, 30, 45 | works; RMS norm 9.8, 41.0, 120.0 |
+| steering with a random vector at layer 30 | a zero vector reproduces the baseline text exactly; 0.5 x RMS changes the wording, 2 x degrades it, 8 x breaks it |
+
+Throughput (tokens per second in total, 128 new tokens per text):
+
+| batch | tokens / s | peak memory on the fullest GPU |
+|---|---|---|
+| 4 | 9.6 | |
+| 16 | 25.8 | |
+| 32 | 46.2 | 88.0 GiB |
+| 64 | 81.8 | 90.2 GiB |
+| 96 | 121.0 | 92.3 GiB |
+| 128 | out of memory | |
+
+Three attempts were needed. The first host could not reach PyPI. The second failed at load because the list of
+modules to keep unquantized, copied from the transformers documentation, was not a valid regular expression. The
+third ran out of GPU memory during load until each GPU was capped at 86 GiB, and also showed that the output head is
+stored in BF16 and must stay unquantized. All three fixes are in `steer/model.py`.
+
+Not done: the sandbagging replication on the hosted model, DeepSeek's own effort vector, the readout, a sandbagging
+vector and steering (plan steps DS1 to DS5). Not measured: throughput for 900-token texts, where the cache per text
+is larger and the batch must be smaller than 96 on this machine, and whether the hosted model reproduces the paper's
+OpenRouter results.
+
+Cost of the three attempts: $54 on vast, of which $33 were download fees that two hosts charge per GB (one host
+charged $24 for the 690 GB download). The next run should pick a host by its download price as well as its hourly
+price.

@@ -302,3 +302,22 @@ Not done:
 How to launch is in the header of `ds0_chain.sh`. The smoke report is `outputs/steering/ds0/smoke_report.json`.
 Its doses (0.5, 2 and 8 times the layer's RMS residual norm, random direction, layer 30) are smoke-test
 values chosen to see a change, not scientific choices.
+
+
+## Addendum 2026-11-17: what the smoke test showed
+
+The smoke test passed on the third attempt (8 x RTX PRO 6000, `outputs/steering/ds0/smoke_report_c.json`,
+`speed_batches.json`). Corrections to the notes above:
+
+- The skip list from the transformers doc page fails with the pinned commit: entries are compiled as regular
+  expressions (`quantizers_utils.should_convert_module`), and `*.self_attn...` is not one. `lm_head` must be on the
+  list too, because the checkpoint stores it in BF16 without a scale tensor. Both are fixed in `steer/model.py`.
+- `device_map="auto"` without a cap fills each GPU to 88 GiB and the load then fails on a 7 GiB temporary. Set
+  `STEER_MAX_MEMORY_GIB=86`. A cap of 84 leaves only 7 layers per GPU and spills to disk. `vast/ds0_chain.sh` does
+  not set the cap yet; export it before running the chain.
+- The FP8 Triton kernel works on RTX PRO 6000 Blackwell (compute capability 12.0).
+- Measured speed: 9.6 tokens/s at batch 4, 25.8 at 16, 46.2 at 32, 81.8 at 64, 121.0 at 96 (128 new tokens);
+  batch 128 runs out of memory. The earlier estimate of 30 to 80 tokens/s at batch 16 was too high for batch 16
+  and about right for batch 32 to 64.
+- Hosts charge for download per GB. Two 690 GB downloads cost $24.39 and $8.20. Filter offers on `inet_down_cost`.
+- A host may not reach PyPI at all (attempt 1). The chain fails within a minute in that case.

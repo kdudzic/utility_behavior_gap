@@ -62,6 +62,8 @@ export HF_HUB_ENABLE_HF_TRANSFER=1 TOKENIZERS_PARALLELISM=false
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export PYTHONPATH="$REPO:$REPO/src:${PYTHONPATH:-}"
 export STEER_USE_KERNELS=0
+# without a cap device_map=auto fills each 95 GiB GPU to 88 GiB and the load fails on a 7 GiB temporary (2026-11-17)
+export STEER_MAX_MEMORY_GIB="${STEER_MAX_MEMORY_GIB:-86}"
 PY="$REPO/.venv/bin/python"
 
 log() { echo "$(date -Is) $*"; }
