@@ -1,0 +1,163 @@
+Week 9 plan (draft 2026-11-17, from steering_extension/0711_meeting_notes.txt). Numbers behind each choice.
+Nothing below is run yet. Item 1 is free; the rest needs a go on spend.
+
+What the notes ask (4 items):
+  1. Closer look at the inverse relation between coherence and score under steering.
+  2. Is the paper's sandbagging also carried by the effort direction? Qwen plus DeepSeek V3.2.
+  3. Why do winning steered essays cost coherence? Ask the coherence judge to compare steered vs unsteered
+     and explain; read the cases where the unsteered essay is rated more coherent.
+  4. Repeat the rubric-coder result (E adds depth and examples, not thesis or closure) on the week-7
+     cross-validation cells (essay-built vector tested on grant).
+
+What the existing data already says about note items 1 and 3 (computed today from the week-6 sweep, effort
+added at r +0.025 to +0.1, all layers, 2,880 pairs with both essays scored):
+
+  coherence gap (steered minus unsteered)   pairs   W     L     ties   coh steered / unsteered
+  below -10                                 789     39    334   416    75.2 / 91.4
+  -10 to -3                                 215     20    40    155    83.7 / 88.5
+  -3 to +3                                  1328    214   88    1026   91.4 / 91.4
+  +3 to +10                                 259     156   4     99     89.4 / 82.6
+  above +10                                 289     175   1     113    91.5 / 74.3
+
+  So the premise of note item 3 holds at the cell level but not at the pair level. Of 604 pairs the steered
+  essay won, only 59 had the steered essay less coherent by more than 3 points (33 of them at layers 6 to
+  14). The cell mean drops because a separate set of steered essays scores about 75 and mostly loses (334 of
+  373 resolved). Working hypothesis: adding E gives a mixture, some essays better and equally coherent, some
+  damaged. Plan items 1 and 2 test that.
+
+1. Coherence vs score, closer (note item 1). Offline, no cost.
+   a. Distributions, not means: histogram of steered-essay coherence per dose at layers 6, 10, 14, 20 against
+      unsteered and random. Share of steered essays below 80 and below 70 per cell.
+   b. Mixture table per cell: share of pairs "better and as coherent", "damaged" (gap below -3), "no change";
+      win rate inside each part. Shows whether the win rate and the coherence loss come from different essays.
+   c. Is damage topic-specific? For each of the 30 topics, count how often its steered essay falls below 80
+      across layers and doses. If a few topics carry the damage, it is a prompt interaction, not a dose effect.
+   d. Dose curve of both shares (better, damaged) by layer. Tells which layer and dose gives gains without the
+      damaged tail (layer 6 +0.1 looks like it: 22 / 3 with coherence 89.2 vs 88.7).
+   e. Same tables for removal (r < 0), where coherence rises slightly and the win rate falls, the other half
+      of the "inverse relation" (Spearman -0.20 over all effort cells, +0.53 and +0.62 within each sign).
+
+2. Why is coherence lower: pairwise coherence explanations (note item 3). API, small.
+   Judge: anthropic/claude-haiku-4.5, temperature 0, the same model and the same coherence definition as the
+   absolute scorer. New prompt: the task prompt plus two essays as A and B (side random, condition hidden);
+   output JSON with which essay would get the higher coherence score, how many points apart, the reasons in
+   free text, and up to three quoted passages that cost the lower one its points. Both orders.
+   Sample (essay, effort added, w6_sweep, layers 6 to 14 unless stated):
+     a. steered won, steered less coherent by > 3:   all 59 (all layers)       <- the note's target cases
+     b. steered lost, steered less coherent by > 3:  60 sampled of 374
+     c. steered won, coherence within 3:             60 sampled of 214
+     d. random direction, steered less coherent by > 3: 60 sampled (random addition, 36% of pairs)
+     e. unsteered vs unsteered (null cells):         60                        <- what the judge says with no cause
+     f. effort removed, r -0.1, layers 6 to 14:      60                        <- coherence up, score down
+   359 pairs x 2 orders = 718 calls, about 2,600 input + 350 output tokens; haiku-4.5 at $1 / $5 per M is
+   about $3.1.
+   Analysis: (i) does the pairwise verdict agree with the sign of the absolute gap (check on the judge);
+   (ii) code the free-text reasons into categories (broken tokens, invented specifics, overblown style,
+   drift, repetition, register shift, truncation) with one gemini-2.5-flash pass, 359 calls, about $0.3,
+   and tabulate by stratum; (iii) hand-read all 59 pairs in (a) and 20 from (b), with quoted passages in the
+   report. Week 7 found invented statistics and 13% broken tokens under ablation; the question is whether
+   the +0.1 tail is the same thing at lower rate.
+
+3. Rubric coder on the cross-validation cells (note item 4). DROPPED (PI decision 2026-11-17).
+   The essay result is stated in essay markers (thesis framing, depth, example, closure). The grant rubric
+   has seven different markers and no thesis or closure marker, so the essay finding cannot be replicated
+   on grant without inventing a mapping between the two marker sets. Not run. To report to Chris as is.
+
+4. Sandbagging and the effort direction (note item 2). GPU + API. The largest item.
+   The paper's sandbagging comparison is harmful-cause framing vs framed-empty baseline (CURRENT_PAPER/results/
+   moral_low_vs_framed_empty_model_task_cells.csv). Harmful-side win rates, ties excluded:
+
+     model           essay            grant            postmortem
+     Qwen3.5-9B      0.52 (144/133)   0.28 (51/128)    0.43 (94/125)
+     DeepSeek V3.2   0.10 (28/251)    0.31 (92/208)    0.37 (109/188)
+
+   Qwen sandbags on grant only, so the Qwen study is on grant. Vector: the essay-built E, which is held out
+   for grant and already steers it (+0.05 wins 0.67 to 0.76, removal 0 / 49).
+
+   4a. Replicate the cell locally. Paper prompts byte-for-byte (build_moral_no_label_prompt with bad_text,
+       and the paper's framed-empty baseline prompt), 30 grant items x 2 repeats, causes assigned by the
+       paper's index rule. 60 pairs, paper panel. Expect about 0.28. Paper's refusal screen unchanged
+       (classify_moral_refusals, gpt-5-mini): pairs with a refusal or degenerate arm are dropped, so
+       sandbagging is not confused with refusing.
+   4b. Readout, no judging. Project the untouched harmful and framed-empty grant outputs onto unit E at layers
+       4 to 20 (as in week 8, section 4.1). Does the harmful framing move the model backward along E? Report
+       d, AUC, and the ratio to the exhortation shift on grant (from cell 3h). Also along a random direction.
+       Within the harmful arm: does the pair's E position predict the panel outcome?
+   4c. Rescue. Harmful prompt with E added vs untouched harmful prompt, layers 6, 10, 16 at +0.05 (the doses
+       that work on grant; +0.1 is too much there: 13 / 11, 9 / 18, 5 / 25). 3 x 60 pairs. Random direction at
+       layer 10 +0.05 as control, 60 pairs.
+   4d. Does the rescue close the gap? The same steered harmful outputs judged against the framed-empty
+       baseline, 3 x 60 pairs (no new generation). If 0.28 moves toward 0.50, adding effort undoes sandbagging.
+   4e. A sandbagging vector, built in any case (PI decision). S = mean residual under harmful minus
+       framed-empty, grant, 300 per arm, response mean, same recipe as E. Report split-half, AUC, cos(S, E).
+       Steering: remove S under the harmful prompt at layer 10 (does sandbagging go away?), add S under the
+       framed-empty prompt at layer 10 (does it appear?), and both with the E part projected out. 4 x 60 pairs.
+   4f. Rubric coder on 4a and on the best 4c cell (120 calls). Week 8: removing E on grant lowers all seven
+       markers by 0.77 to 0.93. Does sandbagging show the same flat drop, or a different profile?
+   Judged pairs: 60 + 180 + 60 + 180 + 240 = 720. At about $0.015 per grant pair (essay pairs ran $0.012;
+   grant texts are longer) about $10.8. Coherence for about 850 new texts $1.1. Refusal
+   screen about 850 calls, $0.7. Rubric $0.25.
+
+   DeepSeek V3.2, white-box (PI decision: Chris approved more vast GPUs to host it).
+   Facts checked 2026-11-17:
+     - deepseek-ai/DeepSeek-V3.2 on Hugging Face: about 685B parameters, weights 690 GB (FP8), MIT licence,
+       custom architecture tag deepseek_v32.
+     - vast offers (re-checked the same day with a wider search; my first search was too narrow): verified
+       8 x RTX PRO 6000 machines, 96 GB each, 765 GB in total, available now at $13.3 to $13.9/h. These hold
+       the full-precision 690 GB weights with about 75 GB left for activations, so small batches only.
+       Roomier machines are also available: 8 x H200 NVL, 1,123 GB, at $34 to $37/h (two machines), which
+       leave about 430 GB for batches. Faster per hour of work if the small machine forces batch size 1.
+     - So the model the paper measured can be hosted as is. The 4-bit AWQ build (400 GB) is the fallback
+       if 75 GB of headroom proves too little.
+     - vast credit on the team account: $261.92.
+   Open risks, none tested yet:
+     - Headroom. 690 GB of weights on 765 GB of VRAM leaves little room; long prompts or batches may not fit.
+     - The paper called "deepseek/deepseek-v3.2" on OpenRouter; provider-side quantization is unknown, so the
+       hosted model may still differ. The sandbagging cell is re-measured on the hosted model first (DS1).
+     - Our hooks (steer/, extraction, projection) were written for Qwen3.5 in transformers. The DeepSeek
+       architecture is custom code; hooks on the residual stream need porting and a check.
+     - Speed. Plain transformers on a 685B model across 4 to 8 GPUs may give a few tokens per second per
+       sequence. 240 grant texts at 1,400 tokens could take hours.
+   Staged so money is not spent before we know it works:
+     DS0. Smoke test, one session of about 2.5 h (download 690 GB, load, generate 4 texts with thinking off,
+          read residuals at 3 layers, add a random vector and confirm the output changes, measure tokens/s).
+          About $35 to $45. Stop here if loading, hooks or speed fail.
+     DS1. Sandbagging replication on the hosted model: harmful vs framed-empty, essay (paper 0.10) and grant
+          (paper 0.31), 30 items x 2 repeats each, 120 pairs, paper panel and refusal screen.
+     DS2. DeepSeek's own effort vector: max-effort vs neutral, essay topics, response mean, the Qwen recipe.
+          Size to be set from DS0 speed (target 150 per arm). Report split-half, AUC by layer.
+     DS3. Readout: project harmful and framed-empty outputs onto DeepSeek's E. Shift d, AUC, ratio to the
+          exhortation shift.
+     DS4. Sandbagging vector S_ds = harmful minus framed-empty (from DS1 texts plus extra to reach 150 per
+          arm). Split-half, AUC, cos(S_ds, E_ds).
+     DS5. Steering, only at the layer DS2 to DS4 point to, essay task: add E under harmful, remove S under
+          harmful, each 60 pairs, plus a random control. Layer and dose need a small calibration first
+          (coherence at 3 doses, 10 texts each), since nothing is known about this model's dose scale.
+   Cost, rough and to be redone after DS0: DS1 to DS5 are about 1,500 generations of about 1,200 tokens,
+   1.8M tokens. At 20 tokens/s in total that is about 25 h at about $13.5/h, about $340. At 100 tokens/s
+   it is about 5 h, about $70. Judging 300 pairs about $4.5, coherence and refusal screen about $1.5.
+   Text-level fallback if DS0 fails: generate through OpenRouter, rubric coder, and read the texts through
+   Qwen's E (shows whether sandbagged text looks low-effort to Qwen, not how DeepSeek produces it).
+
+Order:
+   Day 1 (free): item 1, strata for item 2, manifests for 4a to 4e, port hooks for DeepSeek on CPU stubs.
+   After API go: item 2.
+   After GPU go, Qwen: one A100 session (4a, 4b, 4c, 4e), then judging.
+   After GPU go, DeepSeek: DS0 alone. Report speed and a real cost for DS1 to DS5. Then your go again.
+   Then week9_results.md (one file, design stated up front), explainer rows, deck per the 31.10 advice.
+
+Decisions taken by the PI on 2026-11-17:
+   - Note item 4 (rubric on grant) dropped, reason recorded in item 3.
+   - Qwen sandbagging on grant only.
+   - Essay-built E, +0.05 at layers 6, 10, 16.
+   - DeepSeek white-box on rented multi-GPU vast machines (Chris's approval).
+   - Sandbagging vector built in any case, for Qwen and for DeepSeek.
+
+Settled on 2026-11-17 after the wider search:
+   - Full-precision DeepSeek, no quantization, on an 8 x RTX PRO 6000 machine.
+   - No spending cap for DeepSeek, on condition that Chris is told the expected cost before each paid run.
+   - Credit $261.92. The smoke test fits. A slow model (about $340 for DS1 to DS5) would exceed it, so the
+     real cost goes to Chris after DS0, with a top-up request if needed.
+
+Budget ask now: OpenRouter about $16 (item 2 $3.4, item 4 Qwen $12.8). vast about $3 for Qwen plus
+$35 to $45 for the DeepSeek smoke test. DeepSeek DS1 to DS5 priced after the smoke test.

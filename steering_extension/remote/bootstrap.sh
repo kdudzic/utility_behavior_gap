@@ -21,6 +21,8 @@ uv pip install --python .venv/bin/python -e . --no-deps
 uv pip install --python .venv/bin/python -r requirements.txt
 uv pip install --python .venv/bin/python -r steering_extension/requirements-remote.txt
 MODELS="${STEER_MODELS:-Qwen/Qwen3.5-9B}"
+# STEER_SKIP_WEIGHTS=1: environment only (vast/ds0_chain.sh checks the box before a 690 GB download).
+if [ "${STEER_SKIP_WEIGHTS:-0}" = "1" ]; then MODELS=""; fi
 for m in $MODELS; do
   .venv/bin/python - "$m" <<'PY'
 import sys

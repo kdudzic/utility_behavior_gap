@@ -51,7 +51,8 @@ class AdditiveSteer:
         if self.mode == "prompt" and seq_len == 1:
             # decode step: leave untouched
             return output
-        delta = self.coefs.to(hidden.dtype)[:, None, None] * self.vector.to(hidden.dtype)[None, None, :]
+        # device= is a no-op on one GPU; it matters when device_map spreads the layers over several
+        delta = self.coefs.to(device=hidden.device, dtype=hidden.dtype)[:, None, None] * self.vector.to(device=hidden.device, dtype=hidden.dtype)[None, None, :]
         return _join_output(hidden + delta, rest)
 
 
@@ -62,10 +63,10 @@ class DirectionalAblation:
 
     def __call__(self, module: nn.Module, args, output):
         hidden, rest = _split_output(output)
-        unit = self.unit.to(hidden.dtype)
+        unit = self.unit.to(device=hidden.device, dtype=hidden.dtype)
         proj = (hidden @ unit)[..., None] * unit
         if self.mask is not None:
-            proj = proj * self.mask.to(hidden.dtype)[:, None, None]
+            proj = proj * self.mask.to(device=hidden.device, dtype=hidden.dtype)[:, None, None]
         return _join_output(hidden - proj, rest)
 
 
@@ -96,6 +97,8 @@ class ResidualCapture:
     Set `mask` (batch, seq) for one readout (results in `sums[layer]`, `sq_norm_sums[layer]`), or
     `masks` {name: (batch, seq)} for several readouts in one pass (results in `multi[name][layer]`;
     `sq_norm_sums` then uses masks["rmean"] if present, else the first mask).
+    Results are returned on the mask's device, so layers that live on other GPUs (device_map=auto) can
+    be stacked; on a single device this changes nothing.
     """
 
     def __init__(self, layers: nn.ModuleList) -> None:
@@ -113,16 +116,16 @@ class ResidualCapture:
             if self.masks is not None:
                 sq_mask = self.masks.get("rmean", next(iter(self.masks.values())))
                 for name, mask in self.masks.items():
-                    m = mask.to(hidden.dtype)[..., None]
-                    self.multi.setdefault(name, {})[idx] = (hidden * m).sum(dim=1).float()
-                self.sq_norm_sums[idx] = ((hidden.float().norm(dim=-1) ** 2) * sq_mask).sum(dim=1)
+                    m = mask.to(device=hidden.device, dtype=hidden.dtype)[..., None]
+                    self.multi.setdefault(name, {})[idx] = (hidden * m).sum(dim=1).float().to(mask.device)
+                self.sq_norm_sums[idx] = ((hidden.float().norm(dim=-1) ** 2) * sq_mask.to(hidden.device)).sum(dim=1).to(sq_mask.device)
                 return None
             mask = self.mask
             if mask is None:
                 return None
-            m = mask.to(hidden.dtype)[..., None]
-            self.sums[idx] = (hidden * m).sum(dim=1).float()  # (batch, d)
-            self.sq_norm_sums[idx] = ((hidden.float().norm(dim=-1) ** 2) * mask).sum(dim=1)  # (batch,)
+            m = mask.to(device=hidden.device, dtype=hidden.dtype)[..., None]
+            self.sums[idx] = (hidden * m).sum(dim=1).float().to(mask.device)  # (batch, d)
+            self.sq_norm_sums[idx] = ((hidden.float().norm(dim=-1) ** 2) * mask.to(hidden.device)).sum(dim=1).to(mask.device)  # (batch,)
             return None
 
         return hook
