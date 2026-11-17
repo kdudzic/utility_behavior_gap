@@ -53,7 +53,7 @@ def cause_for(causes: list[dict[str, str]], n_pool: int, item_pos: int, rep: int
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--vectors", type=Path, required=True)
+    ap.add_argument("--vectors", type=Path, default=None, help="vectors.safetensors; only needed with --cell")
     ap.add_argument("--run-name", required=True)
     ap.add_argument("--task", default="grant_proposal_abstract")
     ap.add_argument("--items", type=int, default=30)
@@ -63,8 +63,10 @@ def main() -> None:
     ap.add_argument("--bridge", action="store_true", help="for harmful cells also pair the steered text with the untouched empty text")
     ap.add_argument("--effort-ref", action="store_true", help="also generate untouched max-effort vs framed-neutral pairs")
     args = ap.parse_args()
-    tensors = load_file(str(args.vectors))
-    vec_rel = str(args.vectors.resolve().relative_to(ROOT)) if args.vectors.resolve().is_relative_to(ROOT) else str(args.vectors.resolve())
+    if args.cell and args.vectors is None:
+        ap.error("--cell needs --vectors")
+    tensors = load_file(str(args.vectors)) if args.vectors else {}
+    vec_rel = "" if args.vectors is None else str(args.vectors.resolve().relative_to(ROOT)) if args.vectors.resolve().is_relative_to(ROOT) else str(args.vectors.resolve())
     causes = read_csv_rows(INPUTS / "moral_cause_pairs.csv")
     pool = task_items(args.task)
     cells = []

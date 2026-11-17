@@ -81,6 +81,21 @@ def respond_and_capture(loaded, rows: list[dict], *, max_new_tokens: int, temper
     return readouts, sq, n_resp, texts
 
 
+def capture_with_oom_fallback(loaded, rows: list[dict], *, max_new_tokens: int, temperature: float):
+    """respond_and_capture, but on CUDA out-of-memory split the batch in two and retry (down to single prompts)."""
+    try:
+        return respond_and_capture(loaded, rows, max_new_tokens=max_new_tokens, temperature=temperature)
+    except torch.OutOfMemoryError:
+        if len(rows) == 1:
+            raise
+        torch.cuda.empty_cache()
+        mid = len(rows) // 2
+        print(f"[oom] batch of {len(rows)} did not fit; retrying as {mid} + {len(rows) - mid}", flush=True)
+        a = capture_with_oom_fallback(loaded, rows[:mid], max_new_tokens=max_new_tokens, temperature=temperature)
+        b = capture_with_oom_fallback(loaded, rows[mid:], max_new_tokens=max_new_tokens, temperature=temperature)
+        return ({k: torch.cat([a[0][k], b[0][k]], dim=1) for k in a[0]}, torch.cat([a[1], b[1]], dim=1), torch.cat([a[2], b[2]], dim=0), a[3] + b[3])
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--contrasts", type=Path)
@@ -113,7 +128,7 @@ def main() -> None:
     tail_tokens = None
     for i in range(0, len(rows), args.batch_size):
         batch = rows[i : i + args.batch_size]
-        readouts, sq, n_resp, texts = respond_and_capture(loaded, batch, max_new_tokens=args.max_new_tokens, temperature=args.temperature)
+        readouts, sq, n_resp, texts = capture_with_oom_fallback(loaded, batch, max_new_tokens=args.max_new_tokens, temperature=args.temperature)
         if tail_tokens is None:
             ids0 = chat_input_ids(loaded, batch[0].get("system_prompt", ""), batch[0]["prompt"])
             tail_tokens = {f"tail{k}" if k > 1 else "astart": loaded.tokenizer.decode([ids0[-k]]) for k in range(1, TAIL_K + 1)}

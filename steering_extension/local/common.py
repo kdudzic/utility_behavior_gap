@@ -22,7 +22,12 @@ from utility_behavior_gap.prompts import (  # noqa: E402
 )
 
 STEER_RUNS = ROOT / "outputs" / "steering" / "runs"
-LOCAL_ACTOR = "qwen3.5-9b-or"  # paper actor id; model field records the local HF backend
+import os
+
+# paper actor id; the model field records the local HF backend. A second model (week 9: DeepSeek V3.2 hosted on
+# vast) is selected with STEER_ACTOR and STEER_MODEL_LABEL when the manifests are built; defaults are unchanged.
+LOCAL_ACTOR = os.environ.get("STEER_ACTOR", "qwen3.5-9b-or")
+LOCAL_MODEL_LABEL = os.environ.get("STEER_MODEL_LABEL", "Qwen/Qwen3.5-9B (local hf, bf16)")
 # Translation is excluded from the extension (PI decision 2026-10-17); only these three tasks are used.
 MAX_TOKENS = {"essay": 900, "grant_proposal_abstract": 1400, "incident_postmortem": 3000}
 TASKS = tuple(MAX_TOKENS)
@@ -80,7 +85,7 @@ def make_job(*, pair_uid: str, comparison: str, task_row: dict[str, str], condit
         source_note="steering_extension_local_hf",
     )
     job["max_tokens"] = MAX_TOKENS[task_row["task"]]
-    job["model"] = "Qwen/Qwen3.5-9B (local hf, bf16)"
+    job["model"] = LOCAL_MODEL_LABEL
     if extra:
         job.update(extra)
     return job
