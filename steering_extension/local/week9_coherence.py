@@ -235,9 +235,9 @@ def mixture_tables(E: pd.DataFrame, R: pd.DataFrame, N: pd.DataFrame, sign: int,
     Pd.to_csv(out / f"{tag}_mixture_pooled.csv", index=False)
 
     # figure: share of pairs per part, and win rate inside each part
-    groups = [("null (unsteered vs unsteered), 5 runs", "unsteered vs unsteered", GREY), (f"random {word}, all", f"random direction {word}", ORANGE),
-              (f"effort {word}, all layers, abs(r) <= 0.1", f"effort direction {word}", BLUE)]
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
+    groups = [("null (unsteered vs unsteered), 5 runs", "no steering: two unsteered essays (chance)", GREY), (f"random {word}, all", f"random direction {word}", ORANGE),
+              (f"effort {word}, all layers, abs(r) <= 0.1", f"effort direction E {word}", BLUE)]
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.8))
     xs = np.arange(len(PARTS))
     for k, (gname, lab, c) in enumerate(groups):
         s = Pd[(Pd.group == gname) & (Pd.partner == "any")].set_index("part").loc[PARTS]
@@ -248,20 +248,20 @@ def mixture_tables(E: pd.DataFrame, R: pd.DataFrame, N: pd.DataFrame, sign: int,
         axes[1].errorbar(xs + off, y, yerr=[y - s["win ci lo"], s["win ci hi"] - y], fmt="none", ecolor="#333333", capsize=2, lw=1)
         for x, (w, l) in zip(xs + off, zip(s.W, s.L)):
             axes[1].text(x, 1.02, f"{w}/{l}", ha="center", va="bottom", fontsize=7, color="#333333")
-    ticklabels = [f"damaged\n(steered more than {GAP} below)", f"as coherent\n(within {GAP})", f"more coherent\n(steered more than {GAP} above)"]
+    ticklabels = [f"damaged\n(steered essay more\nthan {GAP} points lower)", f"as coherent\n(within {GAP} points)", f"more coherent\n(steered essay more\nthan {GAP} points higher)"]
     for ax in axes:
         ax.set_xticks(xs, ticklabels, fontsize=9)
         style(ax)
     axes[0].set_ylabel("share of pairs")
-    axes[0].set_title("How the pairs split by coherence gap", fontsize=11)
+    axes[0].set_title("Coherence of the steered essay\nagainst its unsteered partner", fontsize=11)
     axes[0].set_ylim(0, 0.85)
     axes[0].legend(frameon=False, fontsize=8, loc="upper right")
-    axes[1].set_ylabel("win rate of the steered essay, W / (W + L)")
+    axes[1].set_ylabel("win rate of the steered essay")
     axes[1].set_ylim(0, 1.12)
     axes[1].axhline(0.5, color="#999999", lw=1, ls=":")
-    axes[1].set_title("Win rate inside each part (W/L above the bar, exact 95% interval)", fontsize=11)
+    axes[1].set_title("How often the steered essay wins the quality panel\n(W / L above the bar)", fontsize=11)
     dose_txt = "r +0.025 to +0.1" if sign > 0 else "r -0.1 and -0.05"
-    fig.suptitle(f"Effort {word} ({dose_txt}, layers 6 to 28) against random and null: mixture by coherence gap", fontsize=11)
+    fig.suptitle(f"Qwen3.5-9B, essay task, direction {word} at {dose_txt}, layers 6 to 28.\nIn the grey group one of two unsteered essays takes the place of the steered essay.", fontsize=10)
     fig.tight_layout()
     fig.savefig(out / f"{tag}_mixture.png", dpi=150)
     plt.close(fig)
