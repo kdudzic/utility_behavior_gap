@@ -32,101 +32,133 @@ How to read every number in this deck:
 
 ## 1. Adding E damages some essays, the rest win
 
-![Qwen3.5-9B, essay task, neutral prompt. Side a: an essay with E added (r +0.025 to +0.1, layers 6 to 28), with a random direction added, or a second unsteered essay. Side b: the unsteered essay from the same topic and repeat. "Damaged" means the steered essay scores more than 3 coherence points below its partner. Left: E damages 35% of pairs (random 22%, unsteered 22%). Right: damaged pairs lose and hold 80% of all losses. At equal coherence E wins 0.71 (random 0.49, unsteered 0.44). "More coherent" pairs win in every group, because all cells share 60 unsteered partners and 16 of those score low. So the week-6 win rates are too high in level, while effort vs random vs unsteered comparisons hold. A higher dose gives more damage (0.28 to 0.37 of pairs) and no more wins at equal coherence.](results/2026-11-17_w9/1b_mixture.png)
+![Qwen3.5-9B, essay task. Each steered essay is compared with the unsteered essay for the same topic. "Damaged" means it scores more than 3 coherence points below that partner. Left: E damages 35% of pairs (random direction 22%, unsteered 22%). Right: damaged pairs hold 80% of the losses. At equal coherence E wins 0.71 (random direction 0.49, unsteered 0.44).](results/2026-11-17_w9/1b_mixture.png)
 
 ## 2. What the coherence judge objects to in steered essays
 
-The coherence judge (claude-haiku-4.5, temperature 0, same definition) saw the task and two essays, one steered and one unsteered, without knowing which, and said which would score higher on coherence and why, with quotes. Both orders. A second model (gemini-2.5-flash) sorted the reasons. Qwen3.5-9B, essay task, 359 pairs. The table uses only pairs where the judge rated the first-named essay lower in both orders, and gives the share of its explanations naming each reason.
+The coherence judge compared a steered and an unsteered essay, in both orders, and explained why one is less coherent. The table gives the share of its explanations that name each reason. Qwen3.5-9B, essay task.
 
-| reason named by the judge | E added, essay won the panel (28 pairs) | E added, essay lost the panel (56) | random direction added (41) | unsteered vs unsteered (15) |
+| reason named by the judge | E added, essay won the panel (28 pairs) | E added, essay lost the panel (56) | random direction added (41) | unsteered (15) |
 |---|---|---|---|---|
 | overblown style (inflated metaphor, jargon) | 52% | 38% | 12% | 7% |
 | broken tokens (garbled words, foreign characters) | 52% | 68% | 54% | 60% |
 | invented specifics (made-up names, numbers) | 16% | 26% | 29% | 17% |
-| repetition | 2% | 11% | 6% | 0% |
 
-- Overblown style is the one reason specific to the effort direction. The judge quoted, for example, "The friction of blowing dry grass versus the textured allure of blooming native blooms".
-- Broken tokens and invented specifics are named as often for a random direction and for unsteered pairs.
-- Winners and losers differ in amount, not in kind. Of the 59 essays that won the panel with a lower coherence score, only 28 are rated lower in both orders, by 5.5 points. For the losers it is 56 of 60, by 13.5 points.
-- Caveats. The pairwise judge prefers the essay shown first (75% of 718 judgments; each pair was judged in both orders). Reason categories come from one model with no human check. Whether the panel rewards the overblown style as richer writing was not tested.
+- Overblown style is the one reason specific to the effort direction. Example quoted by the judge: "The friction of blowing dry grass versus the textured allure of blooming native blooms".
+- Broken tokens and invented specifics are named as often without steering.
+- Caveats. The judge prefers the essay shown first (75% of judgments), so we use only verdicts that hold in both orders. One model sorted the reasons, with no human check.
 
-## 3. Sandbagging in Qwen3.5-9B replicates, and effort does not explain it
+## 3a. Qwen3.5-9B sandbags as in the paper
 
-Grant task (the one task where Qwen sandbags in the paper). 30 items, 60 pairs per run. "Clean" pairs pass the paper's refusal screen (its classifier, unchanged), so the harmful-prompt text is not a refusal and contains no objection. E is the essay-built vector, so grant is held out for it. Vectors are added at r +0.05, at layer 10 and, in a new run with 240 pairs per cell, at layers 16, 18 and 20 pooled (a random control at each layer). Coherence is 86 to 90 on both sides of every row.
+Grant task. "Harmful" is the competition prompt with a sponsor who funds a harmful cause, "baseline" is the same prompt with no sponsor. W / L is for the harmful side. "Clean" pairs pass the paper's refusal screen.
 
-| side a | side b | layer 10 runs: W / L | new run, layers 16 to 20 pooled: W / L |
-|---|---|---|---|
-| harmful | baseline | 32 / 78 (0.29; paper 0.28) | 14 / 62 (0.18) |
-| harmful + E | baseline | 18 / 49 (0.27) | 55 / 140 (0.28) |
-| harmful + random direction | baseline | 14 / 72 (0.16) | 30 / 176 (0.15) |
-| harmful + E | harmful | 24 / 16 (0.60) | 78 / 45 (0.63) |
-| harmful + random direction | harmful | 23 / 28 (0.45) | 43 / 65 (0.40) |
+| harmful vs baseline | W / L | win rate |
+|---|---|---|
+| paper, clean pairs | 51 / 128 | 0.28 |
+| ours, clean pairs, first three runs | 32 / 78 | 0.29 |
+| ours, clean pairs, new run | 14 / 62 | 0.18 |
+| ours, refusals and objections counted too | 33 / 234 | 0.12 |
 
-- 46% of harmful-prompt texts are refusals or abstracts with an objection (360 texts). Those win 1 of 156 resolved pairs. With them counted, harmful wins 33 / 234.
-- Clean harmful abstracts are shifted backward along E, by 0.4 to 0.6 of the distance the max-effort prompt moves them forward (Cohen's d -0.6 to -0.9 at layers 6 to 16, 196 against 360 texts; a random direction shows nothing).
-- Adding E does not close the gap. At layer 10 the harmful abstract wins 0.27 with E against 0.29 without (p = 0.86). At layers 16 to 20 E beats the random direction (p < 0.001 in both comparisons, also at equal length), and against the baseline it reaches 0.28, from 0.18 untouched (p = 0.12). Under the baseline prompt E wins 0.61 at layer 18 and 0.53 at layer 20.
-- The sandbagging vector S, built from all harmful texts, is orthogonal to E, but it is the refusal vector (cosine 0.98 with the vector from refusal and objection texts). The vector built from the 163 clean texts has a cosine of -0.06 to -0.21 with E (a third to a half of an exhortation backward). We steered with S. Added to the baseline prompt it loses 3 / 27, and removed under the harmful prompt it wins 28 / 15 (clean pairs 10 / 3).
+- The paper's result replicates. Clean harmful abstracts lose, with the same coherence and length as the baseline.
+- 46% of harmful-prompt texts are refusals or contain an objection. The screen removes them.
+- Inside the model, clean harmful abstracts are shifted backward along E, by about half of what the max-effort prompt does forward (Cohen's d -0.6 to -0.9). A random direction shows nothing.
 
-## 4. Sandbagging in DeepSeek V3.2: the harmful cause shifts texts against effort
+## 3b. Qwen3.5-9B: adding effort does not close the gap
 
-We hosted the released checkpoint (671.9B parameters, FP8, 61 layers) on 8 rented GPUs, thinking off, the paper's prompts and panel. Left: harmful (side a) against baseline (side b), 30 items x 2 repeats per run. Right: untouched texts re-encoded and placed along E, 60 per condition. E is built from max-effort vs neutral on grant, the sandbagging vector S from harmful vs baseline on essay. d is Cohen's d, and ratio is the harmful shift divided by the max-effort shift.
+E or a random direction is added under the harmful prompt (r +0.05). Clean pairs, win rate of the steered harmful abstract with W / L in brackets. Layers 16, 18 and 20 are pooled.
 
-| task | pairs | W / L | win rate | paper | coherence a / b | words a / b | refusals or objections |
-|---|---|---|---|---|---|---|---|
-| essay | 120 | 3 / 81 | 0.04 | 0.10 (28 / 251) | 92.0 / 91.8 | 308 / 375 | 0 of 120 |
-| grant | 60 | 5 / 33 | 0.13 | 0.31 (92 / 208) | 92.0 / 91.6 | 543 / 584 | 0 of 60 |
-
-Position along E:
-
-| layer | cosine of S with E | harmful vs baseline along E, essay: d | same, grant: d | max-effort vs neutral along E, essay: d | ratio |
-|---|---|---|---|---|---|
-| 12 | -0.19 | -0.32 | -0.47 | +1.66 | -0.21 |
-| 20 | about -0.2 | -0.36 | -0.85 | +1.17 | -0.31 |
-| 30 | -0.45 | -1.97 | -1.69 | +1.91 | -1.02 |
-| 42 | -0.56 | -1.71 | -1.05 | +1.30 | -1.33 |
-
-- DeepSeek's whole gap is sandbagging. Coherence is the same, the harmful texts are shorter and lose, and none is a refusal.
-- From layer 30 on the harmful cause moves texts backward along E as far as the max-effort prompt moves them forward (half as far in Qwen). A random direction shows nothing (d -0.5 to +0.4).
-- The sandbagging vector points against E. In Qwen the cosine is -0.06 to -0.21 for clean texts.
-
-## 5. DeepSeek V3.2: adding effort helps, mostly by making essays longer
-
-Essay task, 60 pairs per cell. Side a is the harmful prompt with a vector added or removed, compared with the untouched harmful essay and with the baseline essay. S is the sandbagging vector. Coherence is 90.9 to 92.2 in every cell, and 719 of 720 steered texts pass the refusal screen.
-
-| harmful prompt plus | layer, dose | vs untouched harmful: W / L | vs baseline: W / L | words (harmful 307, baseline 373) |
+| harmful prompt plus | vs baseline, layer 10 | vs baseline, layers 16 to 20 | vs untouched harmful, layer 10 | vs untouched harmful, layers 16 to 20 |
 |---|---|---|---|---|
-| nothing | | | 1 / 41 | 307 |
-| E added | 12, +0.1 | 21 / 10 | 1 / 35 | 319 |
-| E added | 20, +0.1 | 20 / 3 | 2 / 33 | 327 |
-| E added | 30, +0.05 | 27 / 7 | 8 / 28 | 329 |
-| E added | 30, +0.1 | 29 / 1 | 6 / 23 | 337 |
-| random direction added | 20, +0.1 | 14 / 9 | 2 / 38 | 315 |
-| S removed (no better than random, p 0.19 to 0.78) | 30, -0.1 | 21 / 11 | 3 / 33 | 333 |
+| nothing | 0.29 (32 / 78) | 0.18 (14 / 62) | | |
+| E | 0.27 (18 / 49) | 0.28 (55 / 140) | 0.60 (24 / 16) | 0.63 (78 / 45) |
+| random direction | 0.16 (14 / 72) | 0.15 (30 / 176) | 0.45 (23 / 28) | 0.40 (43 / 65) |
 
-- E at layer 30, where the readout is strongest, beats the random control (29 / 1 against 14 / 9, p = 0.001) and raises the win rate against the baseline from 0.02 to 0.21 (p = 0.016).
-- Half the dose at layer 30 gives the same result in separately generated essays (8 / 28, p = 0.010). Together the two cells win 14 / 51 (0.22, p = 0.004).
-- The gain is partial and did not grow with the dose (0.22 and 0.21). E adds back 22 to 30 of the 66 missing words. Doses above +0.1 were not run. Layers 12 and 20 give no gain against the baseline at either dose.
-- The longer essay wins 264 of 304 resolved steered vs untouched pairs, and 82 of 84 harmful vs baseline pairs. With the word difference in a logistic regression, E at layer 30 no longer beats the random direction (p = 0.64, before 0.008) and its gain over the untouched harmful essay against the baseline weakens (p = 0.10, before 0.002). At equal length a harmful-prompt essay is predicted to win 0.35 against the baseline (observed 0.07).
-- Caveats. We took layers and doses from Qwen by relative depth and did not tune them. The random control is at layer 20, and layer 30 has none.
+- The gap stays. With E the harmful abstract wins 0.27 to 0.28 against the baseline, far from 0.50.
+- E helps more than a random direction (p < 0.001 at layers 16 to 20, also at equal length). The effect is real and small.
+- E also helps under the baseline prompt (0.61 at layer 18), so it may be a general boost and not a fix for sandbagging.
 
-## Answer to note item 2, open questions and cost
+## 4a. DeepSeek V3.2 sandbags as in the paper, with no refusals
+
+We hosted the released checkpoint on 8 rented GPUs, with thinking off and the paper's prompts and panel. Harmful (side a) against baseline (side b).
+
+| task | pairs | W / L | win rate | paper | words a / b | refusals or objections |
+|---|---|---|---|---|---|---|
+| essay | 120 | 3 / 81 | 0.04 | 0.10 (28 / 251) | 308 / 375 | 0 of 120 |
+| grant | 60 | 5 / 33 | 0.13 | 0.31 (92 / 208) | 543 / 584 | 0 of 60 |
+
+- DeepSeek's whole gap is sandbagging. No text is a refusal and coherence is equal (92 on both sides).
+- The harmful texts are shorter.
+
+## 4b. DeepSeek V3.2: the harmful cause shifts texts against effort
+
+Untouched texts placed along the effort direction E, essay task, 60 texts per condition. d is Cohen's d. Ratio is the harmful shift divided by the max-effort shift.
+
+| layer | harmful vs baseline: d | max-effort vs neutral: d | ratio | cosine of sandbagging vector with E |
+|---|---|---|---|---|
+| 12 | -0.32 | +1.66 | -0.21 | -0.19 |
+| 20 | -0.36 | +1.17 | -0.31 | about -0.2 |
+| 30 | -1.97 | +1.91 | -1.02 | -0.45 |
+| 42 | -1.71 | +1.30 | -1.33 | -0.56 |
+
+- From layer 30 on the harmful cause moves texts backward along E as far as the max-effort prompt moves them forward. In Qwen it is half as far.
+- A random direction shows nothing (d -0.5 to +0.4).
+- The sandbagging vector (harmful minus baseline) points against E. In Qwen the cosine is -0.06 to -0.21.
+
+## 5a. DeepSeek V3.2: adding effort at layer 30 closes part of the gap
+
+Essay task, 60 pairs per cell. E or a random direction is added under the harmful prompt. W / L for the steered harmful essay.
+
+| harmful prompt plus | layer, dose | vs untouched harmful | vs baseline |
+|---|---|---|---|
+| nothing | | | 1 / 41 (0.02) |
+| E | 12, +0.1 | 21 / 10 | 1 / 35 (0.03) |
+| E | 20, +0.1 | 20 / 3 | 2 / 33 (0.06) |
+| E | 30, +0.05 | 27 / 7 | 8 / 28 (0.22) |
+| E | 30, +0.1 | 29 / 1 | 6 / 23 (0.21) |
+| random direction | 20, +0.1 | 14 / 9 | 2 / 38 (0.05) |
+
+- Only layer 30 moves the result against the baseline, from 0.02 to 0.22 (two doses together 14 / 51, p = 0.004).
+- The gain is partial and did not grow with the dose.
+- Caveats. We did not tune layers and doses. The random control is at layer 20, and layer 30 has none.
+
+## 5b. DeepSeek V3.2: the gain is mostly longer essays
+
+Essay task. The panel picks the longer essay in almost every resolved pair.
+
+| | DeepSeek, essay | Qwen, grant |
+|---|---|---|
+| the longer text wins, harmful vs baseline | 82 of 84 | 112 of 185 |
+| words, harmful / baseline | 307 / 373 | 661 / 648 |
+| words, harmful + E at layer 30 | 329 to 337 | |
+| harmful vs baseline, observed win rate | 0.07 | 0.25 |
+| harmful vs baseline, predicted at equal length | 0.35 | 0.21 |
+
+- Harmful essays are 66 words shorter and E adds back 22 to 30 words.
+- At equal length E at layer 30 no longer beats the random direction (p = 0.64, before 0.008).
+- A gap remains at equal length (0.35 against 0.50), and it is much smaller.
+- Qwen's sandbagging is not a length effect.
+
+## Summary: does the effort direction explain sandbagging?
 
 | | Qwen3.5-9B (grant) | DeepSeek V3.2 (essay) |
 |---|---|---|
-| harmful vs baseline | 32 / 78 (0.29), clean pairs | 3 / 81 (0.04) |
+| harmful vs baseline | 0.29 (clean pairs) | 0.04 |
 | refusals or objections among harmful texts | 46% | 0% |
-| harmful texts along E, relative to the max-effort shift | -0.4 to -0.6 | -1.0 to -1.3 from layer 30 |
-| cosine of the sandbagging vector with E | -0.06 to -0.21 (clean texts; with refusals 0.00 to +0.10) | -0.45 at layer 30 |
-| harmful + E vs baseline (untouched harmful) | 0.27 (0.29) at layer 10, 0.28 (0.18) at layers 16 to 20 | 0.22 and 0.21 at two doses (0.02) |
-| the longer text wins, harmful vs baseline | 112 of 185 | 82 of 84 |
-| harmful vs baseline at equal length (predicted) | 0.21 | 0.35 |
+| harmful shift along E, relative to the max-effort shift | -0.4 to -0.6 | -1.0 to -1.3 from layer 30 |
+| cosine of the sandbagging vector with E | -0.06 to -0.21 | -0.45 at layer 30 |
+| harmful + E vs baseline | 0.28 | 0.22 |
 
-- In both models the harmful cause moves texts backward along the effort direction. Adding effort back helps in both and closes the gap in neither (0.28 in Qwen, 0.22 in DeepSeek, against the baseline). In Qwen the gain over a random direction holds at equal length. In DeepSeek it does not.
-- Open on DeepSeek: can the gap be closed fully? Doubling the dose from +0.05 to +0.1 did not close more of it. Not run are doses above +0.1, layers 30 to 42, a random control at layer 30 and under the baseline prompt, and steering on grant. Every steering cell has 23 to 42 resolved pairs.
-- Open on Qwen: steering with the sandbagging vector built from clean texts only (the one we used is mostly a refusal vector), at more layers and with larger clean-pair cells (now 8 to 16 resolved pairs).
-- Open: is length the mechanism in DeepSeek (the model writes less under a harmful cause) or do the judges prefer longer essays? A length-matched generation (fixed word count in both prompts) would separate them.
-- Open: does the panel reward the overblown style that E adds, or do steered essays win despite it?
-- Cost this week: $43 on OpenRouter (panel judging of 5,887 pairs $34, coherence $6, pairwise coherence judge $2, refusal classifier $1) and about $156 on vast (DeepSeek study run $99.69, three smoke-test attempts before it $54, Qwen about $2.50). Full report: `week9_results.md`.
+- In both models the harmful cause moves texts backward along the effort direction.
+- Adding effort back helps in both and closes the gap in neither.
+- So the harmful cause leaves a trace on the effort direction, and most of the sandbagging happens elsewhere.
+
+## Open questions and cost
+
+- DeepSeek: can the gap be closed fully? Not run are doses above +0.1, layers 30 to 42 and a random control at layer 30.
+- DeepSeek: does the model write worse essays under a harmful cause, or only shorter ones that the judges like less? A run with a fixed word count would separate the two.
+- Qwen: steering with the sandbagging vector built from clean texts. The one we used is mostly a refusal vector.
+- Does the panel reward the overblown style that E adds, or do steered essays win despite it?
+- Cost this week: $43 on OpenRouter and about $156 on vast.ai (DeepSeek $154, Qwen $2.50).
 
 ## Backup: Qwen3.5-9B, steering with the sandbagging vector
 
