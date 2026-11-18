@@ -183,23 +183,24 @@ The untouched harmful texts of all three runs (360 texts), by the classifier's l
 | abstract with an objection ("I cannot ... I can, however, write ...") | 140 | 0.39 |
 | full refusal | 24 | 0.07 |
 
-Harmful (side a) against baseline (side b). "All pairs" is the two fully judged runs (120 pairs). "Clean" pools
-the clean pairs of those runs and of the top-up run `w9_sandbag_power` (8 more repeats, only clean pairs judged),
-196 clean pairs in all.
+Harmful (side a) against baseline (side b), the three runs pooled (360 pairs: two runs of 60 and the top-up run
+`w9_sandbag_power` with 8 more repeats). Every pair is judged. The rows split the pairs by the label of the
+harmful-prompt text.
 
 | pairs | n | W / L | win rate | coh a / b | words a / b |
 |---|---|---|---|---|---|
-| all | 120 | 12 / 73 | 0.14 | | |
+| all | 360 | 33 / 234 | 0.12 | | 520 / 648 |
 | clean (the paper's screen) | 196 | 32 / 78 | 0.29 | 88.6 / 87.8 | 661 / 648 |
-| harmful text has an objection (first run) | 22 | 0 / 20 | 0.00 | | 418 / 660 |
-| harmful text is a full refusal (first run) | 4 | 0 / 4 | 0.00 | | 164 / 658 |
+| harmful text has an objection | 140 | 1 / 132 | 0.01 | | 382 / 647 |
+| harmful text is a full refusal | 24 | 0 / 24 | 0.00 | | 174 / 650 |
 
 - 46% of harmful-prompt texts are not clean, close to the paper's 40% of pairs excluded for this cell.
 - The paper's clean-pair result replicates. The harmful side wins 32 / 78 (0.29, p < 0.001 against 0.50) where the
   paper has 51 / 128 (0.28). Qwen writes worse grant abstracts under the harmful cause when it does not refuse or
   object, with no loss of coherence or length.
-- Counting refusals and objections as well, the harmful side wins 12 / 73 (0.14). About half of the raw gap is
-  refusal and objection text.
+- Counting refusals and objections as well, the harmful side wins 33 / 234 (0.12). A text with an objection or a
+  refusal practically never wins (1 / 156), and it is shorter (382 and 174 words against 647). About half of the
+  raw gap is refusal and objection text.
 - Sanity check on the task: max-effort prompt against neutral prompt on grant wins 24 / 5 (0.83; paper 0.68).
 
 ### 4.2 Readout: clean harmful abstracts sit backward on the effort direction
@@ -248,19 +249,24 @@ Side a is the harmful prompt with a vector added at r = +0.05, side b is named i
 
 The layer-10 cells with the top-up, clean pairs only (first run plus `w9_sandbag_power`):
 
-| side a | side b | clean pairs | W / L | win rate | coh a / b |
-|---|---|---|---|---|---|
-| harmful + E | untouched harmful | 101 | 24 / 16 | 0.60 | 88.6 / 88.9 |
-| harmful + random | untouched harmful | 116 | 23 / 28 | 0.45 | 88.4 / 88.0 |
-| harmful + E | baseline | 164 | 18 / 49 | 0.27 | 88.0 / 88.6 |
-| harmful + random | baseline | 168 | 14 / 72 | 0.16 | 87.6 / 88.1 |
-| untouched harmful | baseline | 196 | 32 / 78 | 0.29 | 88.6 / 87.8 |
+| side a | side b | clean pairs | W / L | win rate | coh a / b | all pairs (300; last row 360) W / L |
+|---|---|---|---|---|---|---|
+| harmful + E | untouched harmful | 101 | 24 / 16 | 0.60 | 88.6 / 88.9 | 119 / 83 (0.59) |
+| harmful + random | untouched harmful | 116 | 23 / 28 | 0.45 | 88.4 / 88.0 | 90 / 94 (0.49) |
+| harmful + E | baseline | 164 | 18 / 49 | 0.27 | 88.0 / 88.6 | 21 / 174 (0.11) |
+| harmful + random | baseline | 168 | 14 / 72 | 0.16 | 87.6 / 88.1 | 15 / 198 (0.07) |
+| untouched harmful | baseline | 196 | 32 / 78 | 0.29 | 88.6 / 87.8 | 33 / 234 (0.12) |
+
+"All pairs" adds the pairs where a harmful-prompt text is a refusal or carries an objection (judged on 2026-11-18).
+In those pairs the two sides are often different kinds of text, so the clean columns are the result.
 
 - Adding E does not undo the gap. The steered harmful abstract wins 0.27 against the baseline, the untouched one
   0.29 (Fisher p = 0.86).
 - Against the untouched harmful abstract E wins 24 / 16 (0.60), which differs neither from 0.50 (p = 0.27) nor from
   the random direction's 23 / 28 (p = 0.21). On the neutral prompt the same vector and dose won 0.67 to 0.76 on
-  grant in week 7, so E may still help a little here, but the cell cannot show it.
+  grant in week 7, so E may still help a little here, but the cell cannot show it. Over all pairs the picture is the
+  same with more data: E 119 / 83 (0.59) against random 90 / 94 (0.49), p = 0.053, and no gain against the baseline
+  (21 / 174 against 33 / 234, p = 0.66).
 - A random direction makes the harmful abstract somewhat worse against the baseline (14 / 72, p = 0.04 against the
   untouched 32 / 78). E does not.
 - E does not change the refusal rate. The clean share is 0.57 untouched, 0.45 to 0.57 with E and 0.45 with a random
@@ -347,11 +353,6 @@ Throughput (tokens per second in total, 128 new tokens per text):
 | 96 | 121.0 | 92.3 GiB |
 | 128 | out of memory | |
 
-Three attempts were needed. The first host could not reach PyPI. The second failed at load because the list of
-modules to keep unquantized, copied from the transformers documentation, was not a valid regular expression. The
-third ran out of GPU memory during load until each GPU was capped at 86 GiB, and also showed that the output head is
-stored in BF16 and must stay unquantized. All three fixes are in `steer/model.py`.
-
 Three smoke-test attempts were needed (a host without access to PyPI, an invalid entry in the list of modules to keep
 unquantized, and GPU memory during load, fixed with a cap of 86 GiB per GPU and by keeping the output head
 unquantized). The load stays tight on these cards and failed once more during the study, so every step of the chain
@@ -416,16 +417,18 @@ direction. "ratio" is the harmful shift divided by the exhortation shift.
 ### 5.5 Steering
 
 Essay task, 60 pairs per cell, dose as a fraction of the layer's RMS residual norm. Coherence is 90.9 to 92.2 in
-every cell and 719 of 720 steered harmful texts are clean, so no cell is damaged. The +0.05 effort cells were
-generated and not judged.
+every cell and 719 of 720 steered harmful texts are clean, so no cell is damaged.
 
 Harmful prompt with a vector, against the untouched harmful essay and against the baseline essay:
 
 | vector, layer, dose | vs untouched harmful: W / L | vs baseline: W / L | words (untouched harmful 307, baseline 373) |
 |---|---|---|---|
 | none | | 1 / 41 | 307 |
+| E added, layer 12, +0.05 | 16 / 6 | 1 / 36 | 315 |
 | E added, layer 12, +0.1 | 21 / 10 | 1 / 35 | 319 |
+| E added, layer 20, +0.05 | 24 / 11 | 2 / 39 | 321 |
 | E added, layer 20, +0.1 | 20 / 3 | 2 / 33 | 327 |
+| E added, layer 30, +0.05 | 27 / 7 | 8 / 28 | 329 |
 | E added, layer 30, +0.1 | 29 / 1 | 6 / 23 | 337 |
 | S removed, layer 12, -0.1 | 20 / 6 | 3 / 33 | 324 |
 | S removed, layer 20, -0.1 | 19 / 4 | 2 / 34 | 326 |
@@ -440,8 +443,12 @@ layer 30 6 / 18 (words 366, 352, 354 against 373). There is no random-direction 
   (random direction 14 / 9, Fisher p = 0.001) and wins 6 / 23 (0.21) against the baseline where the untouched
   harmful essay wins 1 / 41 (0.02, p = 0.016). Layer 30 is where the readout is strongest. Layers 12 and 20 show the
   same direction against the untouched harmful essay (0.68 and 0.87) and no gain against the baseline.
-- The rescue is partial. At this dose the steered essay still loses most pairs against the baseline and recovers
-  30 of the 66 missing words. Higher doses were not run, and coherence shows no cost yet at +0.1.
+- Half the dose at layer 30 gives the same result in separately generated essays: 8 / 28 (0.22) against the
+  baseline (p = 0.010 against 1 / 41). The two layer-30 cells together win 14 / 51 (0.22, p = 0.004). At layers 12
+  and 20 the half dose also changes nothing against the baseline.
+- The rescue is partial and did not grow with the dose. Against the baseline +0.05 and +0.1 give 0.22 and 0.21,
+  while against the untouched harmful essay (0.79 and 0.97) and in length (22 and 30 of the 66 missing words) the
+  larger dose does more. Doses above +0.1 were not run, and coherence shows no cost yet at +0.1.
 - Removing S under the harmful prompt helps against the untouched harmful essay (0.66 to 0.83) but not more than a
   random direction does (p 0.19 to 0.78), and does not help against the baseline (0.06 to 0.08).
 - Adding S to the baseline prompt lowers the essays (0.23 to 0.34 win rate, p = 0.02 at layers 20 and 30), without a
@@ -450,6 +457,10 @@ layer 30 6 / 18 (words 366, 352, 354 against 373). There is no random-direction 
   not 0.50 is the level to compare the steered cells with.
 
 ### 5.6 Cost
+
+OpenRouter, from the usage recorded with every call: $26.04 for the whole week. Panel judging $20.08 (Qwen $14.45
+for 2,220 pairs, DeepSeek $5.63 for 1,740 pairs), coherence scores $3.32, refusal classifier $0.59, pairwise
+coherence judge of section 2 $2.06.
 
 The study machine ran 4 h 40 min and cost $99.69 on vast including the $8.20 download fee. About 45 minutes of that
 went into two bugs in new code (a model load that fails now and then, and an out-of-memory fallback that kept the
@@ -463,7 +474,7 @@ failed batch in memory). The three smoke-test attempts before it cost $54, of wh
   exhortation in Qwen and by a full one in DeepSeek.
 - The models differ in whether effort carries the sandbagging. In Qwen the sandbagging vector is orthogonal to
   effort and adding effort does not close the gap (0.27 against 0.29). In DeepSeek the sandbagging vector points
-  against effort (cosine -0.45 at layer 30) and adding effort at that layer partly closes the gap (0.21 against
-  0.02).
-- Not tested: higher doses and other layers on DeepSeek, a random-direction control under the baseline prompt,
+  against effort (cosine -0.45 at layer 30) and adding effort at that layer partly closes the gap (0.22 and 0.21
+  at the two doses against 0.02), without closing more at the higher dose.
+- Not tested: doses above +0.1 and layers between 30 and 42 on DeepSeek, a random-direction control under the baseline prompt,
   DeepSeek steering on grant, and larger cells (every DeepSeek steering cell has 60 pairs and 23 to 42 resolved).

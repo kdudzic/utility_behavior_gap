@@ -193,3 +193,36 @@ sbatch --array=0-3 steering_extension/slurm/gpu_job.sbatch steering_extension.st
 Compute nodes are offline there: weights and `kernels-community/mamba-ssm` must be cached from the login node first.
 Account `plgllmpsypath-gpu-a100`, partition `plgrid-gpu-a100`, 40 GB A100s. Login nodes were closed by the
 admins on 2026-10-17 (security update, no ETA); the Phase 0-2 raw outputs still sit on `$SCRATCH` there.
+
+## Week 9 additions (2026-11-17/18)
+
+- `docs/week9_results.md`: the week-9 report (plan in repo-root `week9_plan.txt`, from `0711_meeting_notes.txt`):
+  where the coherence loss under effort steering comes from, what the coherence judge objects to, and whether the
+  paper's sandbagging (harmful cause vs framed-empty baseline) runs through the effort direction, on Qwen3.5-9B (grant)
+  and on a hosted DeepSeek V3.2 (essay, grant). Deck `docs/week9_deck.md`. Tables and figures in
+  `docs/results/2026-11-17_w9/` (DeepSeek under `ds/`).
+- `local/week9_coherence.py`: offline split of the judged week-6 and week-7 pairs by coherence gap (damaged / as
+  coherent / more coherent), by topic and by dose; writes `outputs/steering/w9_analysis/item1_summary.md`.
+- `local/coherence_pairwise.py sample|judge|code|analyze`: the coherence judge (claude-haiku-4.5) compares a steered
+  and an unsteered essay in both orders and explains its choice, a second model (gemini-2.5-flash) codes the reasons;
+  paid, resumable; writes `item2_summary.md` and the case files `stratum_a_cases.md`, `stratum_b_cases.md`.
+- `local/make_sandbag_jobs.py`: manifests for harmful vs framed-empty with the paper's prompts and cause rule, steered
+  cells under either prompt (`--cell KEY:LAYER:R:harmful|empty`), the steered-harmful vs baseline bridge (`--bridge`),
+  max-effort vs neutral reference pairs (`--effort-ref`), top-up repeats (`--repeat-start`).
+- `local/sandbag_refusals.py`: the paper's refusal classifier (`classify_moral_refusals`, gpt-5-mini) on the
+  harmful-prompt texts of a run; paid; writes `<run>/refusal_labels.jsonl`.
+- `local/week9_sandbag.py --run-dir <run> [--run-dir ...] [--out <dir>]`: cell table with the refusal screen
+  (clean pairs), projections of the untouched texts onto E, S, S minus E and a random direction, the same next to
+  the exhortation shift, and the within-harmful split by outcome.
+- Qwen: `local/week9_cells.sh local|remote` builds the `w9_sandbag_local` and `w9_sandbag_remote` manifests, the
+  sandbagging contrast set and `vectors/qwen3.5-9b_sandbag_v1` (E, S, S minus E); `vast/w9_chain.sh` runs them on
+  the instance, `vast/w9_power.sh` the top-up run `w9_sandbag_power` (8 more repeats).
+- DeepSeek V3.2 (`deepseek-ai/DeepSeek-V3.2`, FP8 as released, 8 x 95 GiB GPUs): `steer/model.py` detects the model
+  family, builds the thinking-off prompt and the FP8 load (`STEER_MAX_MEMORY_GIB`, default 86 in the chains);
+  `STEER_ACTOR` and `STEER_MODEL_LABEL` set the labels in `local/common.py`. `vast/ds0_chain.sh` is the smoke test
+  (`remote/deepseek_smoke.py`), `local/week9_ds_cells.sh base|steer` builds the manifests (`ds_base_essay`,
+  `ds_base_grant`, `ds_steer`) and the contrast set, `vast/ds1_chain.sh` runs the study on the instance (retries,
+  skip-if-done, resume with `DS1_WAIT_FOR`, self-stop). Hosting notes and pitfalls: `docs/deepseek_port_notes.md`.
+  A chain run costs about $21 per hour plus a download fee of $8 to $24 depending on the host.
+- Both chains stop the instance themselves after a grace period; `touch outputs/steering/logs/<name>.pulled` on the
+  instance after `vast pull` ends the wait. A stopped instance still bills its disk: `vast down --yes` afterwards.

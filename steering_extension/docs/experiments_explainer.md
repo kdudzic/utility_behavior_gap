@@ -1,6 +1,6 @@
 # Every steering experiment so far, in order
 
-Last updated 2026-10-30 (week 7, after the GPU batch). One entry per experiment: what was done, with
+Last updated 2026-11-18 (week 9). One entry per experiment: what was done, with
 what values, on what, and what came out. Detailed tables live in the per-week documents linked in each entry.
 Numbers are win rates of the steered (or ablated) side with wins / losses in brackets, panel ties excluded.
 
@@ -88,6 +88,23 @@ v4 vectors: same recipe as v3 with 30 items x 2 tasks x 5 repeats = 300 response
 | 7.6 | steering with R_id and R_id minus E | layer 6 +0.1, layer 10 -0.1, layer 16 -0.1; 60 pairs per cell, 420 pairs | R_id steers like a weak E: removal 6/19 and 7/29 (E 2/29, 5/37; random 13/27, 20/21), addition 11/6 (E 22/3, random 16/25). R_id minus E: layer-10 removal gone (11/15, p = 0.002 vs E), layer-16 removal 4/15 with a coherence drop (86), layer-6 addition 11/5 with 44 ties (n.s. vs anything). The role vector's steering effect is its effort component |
 | 7.7 | four more role-vector recipes: R_act (pretend-and-act-as vs direct cue, v4), R_sharp (essay R_id pairs with the largest haiku craft gap, 75 of 300), R_wide (20 world-class vs 20 novice paraphrases, new essay extraction), R_content (world-class essayist vs world-class other profession), each also minus E | same three cells, 60 pairs each, 1,560 pairs | R_act and R_content at the random level everywhere. R_sharp = E at removal (2/29, 1/30), loses at layer-6 addition; minus E it keeps a weak loss (7/18, 6/20). R_wide is the first reliable role vector (split-half 0.70 to 0.87, AUC 0.88 to 0.95); removal loses 0/56 and 2/55 with coherence 80 (plain student prose, not breakdown) and the same minus E (0/57, 0/54); addition at layer 6 wins 12/5 but minus E 6/9. A competence direction that only works when removed, not the role identity |
 
+## 8. Week 9 (2026-11-17/18): coherence mixture, coherence judge's reasons, sandbagging in Qwen and DeepSeek, `week9_results.md`
+
+Sandbagging is the paper's comparison of the harmful-cause prompt (side a) with the framed-empty baseline prompt, prompts byte for byte. "Clean" pairs pass the paper's refusal screen (gpt-5-mini classifier, unchanged). S is a sandbagging vector (harmful minus baseline, recipe of E).
+
+| # | experiment | values | result |
+| --- | --- | --- | --- |
+| 8.1 | where the coherence loss under E comes from (offline) | week-6 sweep, E added at r +0.025 to +0.1, layers 6 to 28, 2,880 essay pairs; random 960; unsteered 300; pairs split by coherence gap (below -3, within 3, above +3) | a mixture: 35% of pairs damaged (random 22%, unsteered 22%), holding 80% of the losses (59/374); at equal coherence E wins 0.71 (214/88; unsteered 0.44, random 0.49); "more coherent" pairs win 0.99 but unsteered pairs win 0.97 there (16 of the 60 shared unsteered partners score low), so sweep win rates are too high in level (against the 44 good partners: unsteered 0.22, E 0.37); higher dose gives more damage, no more clean wins; removal leaves coherence alone and loses 33/313 at equal coherence |
+| 8.2 | pairwise coherence judge with explanations | claude-haiku-4.5 at temperature 0, steered vs unsteered essay, both orders, reasons coded by gemini-2.5-flash; 359 pairs in 6 groups, $2.06 | overblown style is the effort-specific reason (52% and 38% of explanations after adding E; random 12%, unsteered 7%); broken tokens (52 to 68%) and invented specifics are named as often without steering; of 59 essays that won with lower coherence only 28 are rated lower in both orders (5.5 points; losers 56 of 60, 13.5 points); the judge picks the first essay in 75% of judgments |
+| 8.3 | rubric coder on the cross-validation (grant) cells | | not run: the grant rubric has no thesis or closure marker; dropped by the PI |
+| 8.4 | Qwen sandbagging, replication | grant, 30 items, 12 repeats over three runs (360 harmful texts) | 46% of harmful texts are refusals or carry an objection; clean pairs 32/78 (0.29; paper 51/128, 0.28) at equal coherence and length; all 360 pairs 33/234; texts with an objection or refusal win 1/156 |
+| 8.5 | Qwen readout along E | 196 clean harmful vs 360 baseline texts, layers 6 to 16; 60 max-effort vs 60 neutral | clean harmful texts sit backward on E (d -0.61 to -0.89), 0.4 to 0.6 of the exhortation shift; random nothing; position does not predict the panel's choice within harmful (AUC 0.47 to 0.52) |
+| 8.6 | Qwen, E added under the harmful prompt | essay-built E, layer 10, r +0.05, with top-up (clean pairs 101 to 168); layers 6 and 16 first run only | no rescue: vs baseline 18/49 (0.27) against untouched 32/78 (0.29); vs untouched harmful 24/16, not different from random 23/28 (p = 0.21); refusal rate unchanged |
+| 8.7 | Qwen sandbagging vector S | grant, 300 responses per arm; steering at layer 10, r 0.1, 60 pairs per cell, also S minus E | reliable (split-half 0.97 to 0.98), orthogonal to E (cosine 0.00 to +0.10 at layers 6 to 16); added to baseline: 3/27, coherence unchanged, no refusals; removed under harmful: 28/15 vs untouched harmful (clean 10/3), clean vs baseline 9/7 against 4/7; refusals not reduced; minus E the same |
+| 8.8 | DeepSeek V3.2 hosted | released FP8 checkpoint, 8 x 95 GiB GPUs, thinking off, 61 layers; harmful vs baseline, 30 items x 2 repeats | sandbags without refusing: essay 3/81 (0.04; paper 0.10), grant 5/33 (0.13; paper 0.31), 180 of 180 harmful texts clean, equal coherence, shorter texts; max-effort vs neutral on essay 31/3 |
+| 8.9 | DeepSeek vectors and readout | E from grant, S from essay, 150 per arm; projections of 60 texts per condition at 9 layers | cos(S, E) -0.2 up to layer 20, -0.45 at 30, -0.56 at 42; harmful texts sit backward on E by a full exhortation from layer 30 (d -1.97 essay, -1.69 grant; ratio -1.0 to -1.3); the exhortation moves texts backward on S |
+| 8.10 | DeepSeek steering under the harmful prompt | essay, 60 pairs per cell, layers 12, 20, 30; E +0.05 and +0.1, S -0.1, S minus E -0.1 and random +0.1 at layer 20; S +0.1 under the baseline prompt | E at layer 30: 29/1 vs untouched harmful (random 14/9, p = 0.001) and 6/23 vs baseline (untouched 1/41, p = 0.016), a partial rescue; half the dose gives the same (27/7 and 8/28, p = 0.010), so no dose response against the baseline; layers 12 and 20 help vs untouched harmful only; S removal not better than random; S added to baseline 10/19, 5/17, 6/18 (no control); coherence 91 to 92 everywhere |
+
 ## 6. Standing answers to the hypotheses (after week 7; week 8 adds: the win-rate effects are not coherence effects, see 7.1 and 7.2; the paper's rubric markers move the same way for the vector as for the prompt on content, not on framing, see 7.3; the role cue rides on E, see 7.4; the one reliable role vector, world-class vs novice, steers only downward and only toward plain prose, see 7.7)
 
 - H2, removing the direction cancels the effect: supported. Full dose curve at 12 layers (week 6); against
@@ -102,3 +119,9 @@ v4 vectors: same recipe as v3 with 30 items x 2 tasks x 5 repeats = 300 response
   rate with coherence intact. Specificity claims are made against the matched random cell.
 - Not yet shown: a length control for the positive effect, an ablation without coherence cost, a dose curve under
   the world-class prompt, anything on the 27B model.
+- Week 9, sandbagging: the paper's harmful-cause effect replicates in both models (8.4, 8.8). Both models move
+  backward along the effort direction under the harmful cause (8.5, 8.9). Adding the direction back does not undo
+  the effect in Qwen (8.6), where the sandbagging vector is orthogonal to E (8.7), and undoes part of it in
+  DeepSeek at layer 30 (8.10), where the sandbagging vector points against E. Week 9 also qualifies H1: the win
+  rates of the week-6 sweep are too high in level because of 16 weak shared partners, and the effect of adding E
+  at equal coherence is 0.71 against 0.44 for unsteered pairs (8.1).
