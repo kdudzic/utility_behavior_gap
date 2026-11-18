@@ -53,13 +53,13 @@ The script is `local/week9_coherence.py`, and the full tables and figures are in
 - The steering effect is in the as-coherent part. There E wins 0.71 against 0.44 for null and 0.49 for random. The
   "more coherent" part wins 0.99, but null wins 0.97 there too, so those 331 wins (55% of all effort wins) say
   little about steering. They are the 16 weak partners.
-- A higher dose buys more damage and no more clean wins. In layers 6 to 14 the damaged share rises from 0.28 at
+- A higher dose damages more essays and adds no clean wins. In layers 6 to 14 the damaged share rises from 0.28 at
   +0.025 to 0.37 at +0.1, while the share of pairs won at equal or better coherence stays at 0.21 to 0.25 (null
   0.15). In layers 16 to 28 the damaged share reaches 0.46 and the clean-win share is at the null level (0.15 to
   0.18).
 - Layer 6 at +0.1 is the one cell with damage below null (0.17) and the highest clean-win share (0.33, 22 / 3). It is
   one cell of 60 pairs, found after looking, so it is a candidate and not a result.
-- The damage is spread over topics. The five worst topics carry 29.5% of the essays below 80 (21% expected by
+- The damage is spread over topics. The five worst topics hold 29.5% of the essays below 80 (21% expected by
   chance), and the effort-added share is above the topic's own unsteered share in 26 of 30 topics. Topics that are
   low under E are also low unsteered (Spearman 0.48).
 
@@ -199,11 +199,11 @@ harmful-prompt text.
   paper has 51 / 128 (0.28). Qwen writes worse grant abstracts under the harmful cause when it does not refuse or
   object, with no loss of coherence or length.
 - Counting refusals and objections as well, the harmful side wins 33 / 234 (0.12). A text with an objection or a
-  refusal practically never wins (1 / 156), and it is shorter (382 and 174 words against 647). About half of the
+  refusal wins 1 of 156 resolved pairs, and it is shorter (382 and 174 words against 647). About half of the
   raw gap is refusal and objection text.
 - Sanity check on the task: max-effort prompt against neutral prompt on grant wins 24 / 5 (0.83; paper 0.68).
 
-### 4.2 Readout: clean harmful abstracts sit backward on the effort direction
+### 4.2 Readout: clean harmful abstracts are shifted backward along the effort direction
 
 Untouched texts re-encoded without steering, response-token-mean projection onto unit vectors as a fraction of the
 residual RMS (as in week 8, section 4.1). 196 clean harmful texts against 360 baseline texts, and 60 max-effort against
@@ -224,7 +224,7 @@ direction than a baseline text. "ratio" is the harmful shift divided by the exho
   them forward. A baseline text sits further along E than a clean harmful text 68 to 74% of the time. A random
   direction shows nothing.
 - With refusals and objection texts included, harmful and baseline do not separate along E at layers 4 to 16 (AUC 0.49 to 0.54),
-  because those texts sit forward on E (d +0.98 to +1.42 for the 140 objection texts). They are a different kind
+  because those texts are shifted forward along E (d +0.98 to +1.42 for the 140 objection texts). They are a different kind
   of text (short, with meta-commentary), and a random direction also moves for them at layer 16 (d -1.72), so their
   positions say little.
 - Within the 110 resolved clean pairs, the E position of the harmful text does not separate pairs the harmful side
@@ -257,17 +257,17 @@ The layer-10 cells with the top-up, clean pairs only (first run plus `w9_sandbag
 | harmful + random | baseline | 168 | 14 / 72 | 0.16 | 87.6 / 88.1 | 15 / 198 (0.07) |
 | untouched harmful | baseline | 196 | 32 / 78 | 0.29 | 88.6 / 87.8 | 33 / 234 (0.12) |
 
-"All pairs" adds the pairs where a harmful-prompt text is a refusal or carries an objection (judged on 2026-11-18).
+"All pairs" adds the pairs where a harmful-prompt text is a refusal or contains an objection (judged on 2026-11-18).
 In those pairs the two sides are often different kinds of text, so the clean columns are the result.
 
 - Adding E does not undo the gap. The steered harmful abstract wins 0.27 against the baseline, the untouched one
   0.29 (Fisher p = 0.86).
 - Against the untouched harmful abstract E wins 24 / 16 (0.60), which differs neither from 0.50 (p = 0.27) nor from
   the random direction's 23 / 28 (p = 0.21). On the neutral prompt the same vector and dose won 0.67 to 0.76 on
-  grant in week 7, so E may still help a little here, but the cell cannot show it. Over all pairs the picture is the
-  same with more data: E 119 / 83 (0.59) against random 90 / 94 (0.49), p = 0.053, and no gain against the baseline
+  grant in week 7, so E may still help a little here, but the cell cannot show it. Over all pairs the result is the
+  same with more data. E wins 119 / 83 (0.59) against random 90 / 94 (0.49), p = 0.053, and no gain against the baseline
   (21 / 174 against 33 / 234, p = 0.66).
-- A random direction makes the harmful abstract somewhat worse against the baseline (14 / 72, p = 0.04 against the
+- A random direction makes the harmful abstract worse against the baseline (14 / 72, p = 0.04 against the
   untouched 32 / 78). E does not.
 - E does not change the refusal rate. The clean share is 0.57 untouched, 0.45 to 0.57 with E and 0.45 with a random
   direction (first run).
@@ -297,11 +297,11 @@ Steering with S at layer 10, 60 pairs per cell. "S minus E" is S with its E comp
 | baseline, S added (r +0.1) | untouched baseline | 3 / 27 | 3 / 27 | 89.0 / 88.9 | 628 / 646 |
 | baseline, S minus E added | untouched baseline | 2 / 26 | 2 / 26 | 89.2 / 88.9 | 631 / 646 |
 
-- S is a reliable direction and it is not the effort direction (but see 4.7: S is mostly a refusal vector, and the
-  vector built from clean texts only points weakly against E). Its cosine with E is near zero, and projecting E out
+- S is a reliable direction and it is not the effort direction (section 4.7 shows that S is mostly a refusal vector, and that the
+  vector built from clean texts only has a cosine of -0.06 to -0.21 with E). Its cosine with E is near zero, and projecting E out
   changes nothing in any cell.
 - Adding S to the baseline prompt makes the abstracts lose (3 / 27, p < 0.001) with coherence unchanged and no
-  refusals (0 of 60 texts open with a refusal phrase). So S carries a drop in quality and not only refusal text.
+  refusals (0 of 60 texts open with a refusal phrase). So adding S lowers quality even when it produces no refusal text.
 - Removing S under the harmful prompt helps (28 / 15 on all pairs, 10 / 3 and 7 / 1 on clean pairs) and moves the
   clean-pair result against the baseline from 4 / 7 to 9 / 7 and 6 / 4. The clean cells are small (8 to 16 resolved
   pairs), so this is a direction of effect and not an estimate.
@@ -311,17 +311,18 @@ Steering with S at layer 10, 60 pairs per cell. "S minus E" is S with its E comp
 ### 4.5 What this says
 
 - Qwen's sandbagging on grant replicates on clean pairs (32 / 78, paper 51 / 128). On top of it, 46% of the
-  harmful-prompt texts are refusals or carry an objection.
-- The effort direction registers the harmful cause. Clean harmful abstracts sit backward on E by about half an
+  harmful-prompt texts are refusals or contain an objection.
+- The harmful cause shows up on the effort direction. Clean harmful abstracts are shifted backward along E by about half an
   exhortation (196 against 360 texts). The position does not predict the panel's choice within the harmful arm.
-- The effort direction does not carry the sandbagging. Adding E under the harmful prompt at layer 10 leaves the
+- The effort direction does not explain the sandbagging. Adding E under the harmful prompt at layer 10 leaves the
   gap to the baseline where it was (0.27 against 0.29, 164 and 196 clean pairs). At layers 16 to 20 (section 4.6)
-  E makes the harmful abstract somewhat better than a random direction does (78 / 45 against 43 / 65), and the gap
+  E makes the harmful abstract better than a random direction does (78 / 45 against 43 / 65), and the gap
   to the baseline stays (0.28 against 0.18 untouched in that run, p = 0.12). A vector built from the harmful contrast (all texts, so mostly refusal, section 4.7) is
   orthogonal to E, lowers quality when added to the baseline prompt (3 / 27) and helps when removed under the
   harmful prompt (28 / 15 on all pairs, 10 / 3 on clean pairs).
-- So in this model and task, sandbagging and low effort are different directions. The harmful cause moves the text
-  a little along the effort axis as a side effect and does its damage elsewhere.
+- So in this model and task, sandbagging and low effort are mostly different directions. The harmful cause moves
+  clean abstracts about half an exhortation backward along E, and most of the change is in other directions
+  (section 4.7).
 - Not tested: other layers or doses for S and larger samples for its clean-pair cells (8 to 16 resolved pairs),
   doses of E above +0.05 under the harmful prompt, E built on grant texts, and the essay and postmortem tasks. DeepSeek is section 5.
 
@@ -396,14 +397,14 @@ divided by the shift of the max-effort prompt (4.2).
 
 - S is the refusal and objection vector. Its cosine with the vector built from the 137 non-clean responses is
   0.98, and with the vector built from the clean responses 0.24 to 0.42.
-- The clean-text sandbagging vector points weakly against E at every layer (cosine -0.06 to -0.21). Its component
+- The clean-text sandbagging vector points against E at every layer, with a small cosine (-0.06 to -0.21). Its component
   along E is a third to a half of an exhortation backward, the same number as the readout of 4.2 on other texts.
-  The non-clean texts sit forward on E at layers 4 to 14, which is why the two cancelled in S.
-- So "S is orthogonal to E" (4.4) describes refusal, not the quality drop in clean abstracts. For clean abstracts
-  the honest statement is: the harmful cause moves them backward along E, and E is a small part of what changes
+  The non-clean texts are shifted forward along E at layers 4 to 14, so the two shifts cancelled in S.
+- So "S is orthogonal to E" (4.4) describes refusal, not the quality drop in clean abstracts. For clean abstracts,
+  the harmful cause moves them backward along E, and E is a small part of what changes
   (at most 5% of the squared length of the clean vector; DeepSeek 20% at layer 30).
 - The clean vector is small (0.01 to 0.05 of the residual size) and less stable than S (split-half cosine 0.51 to
-  0.86), so its cosines are somewhat pulled toward zero by noise.
+  0.86), so noise makes its cosines smaller in size than the true ones.
 - The steering cells of 4.4 used S. Adding S to the baseline prompt gave worse abstracts without refusal phrases
   (3 / 27), so the refusal vector also lowers quality, but those cells do not test the clean-text vector. Steering
   with the clean vector was not run.
@@ -441,7 +442,7 @@ Throughput (tokens per second in total, 128 new tokens per text):
 
 Three smoke-test attempts were needed (a host without access to PyPI, an invalid entry in the list of modules to keep
 unquantized, and GPU memory during load, fixed with a cap of 86 GiB per GPU and by keeping the output head
-unquantized). The load stays tight on these cards and failed once more during the study, so every step of the chain
+unquantized). The model barely fits on these cards, and the load failed once more during the study, so every step of the chain
 now retries.
 
 ### 5.2 Replication: the hosted model sandbags as in the paper, without refusing
@@ -455,10 +456,10 @@ twice (base run and the steering run's own base pairs).
 | grant | 60 | 5 / 33 | 0.13 | 0.31 (92 / 208) | 92.0 / 91.6 | 543 / 584 | 60 of 60 |
 | max-effort vs neutral, essay | 60 | 31 / 3 | 0.91 | | 91.9 / 91.5 | 372 / 328 | |
 
-- The hosted model reproduces the paper's direction on both tasks, somewhat more strongly. The grant cell has 38
+- The hosted model reproduces the paper's direction on both tasks, with lower win rates for the harmful side. The grant cell has 38
   resolved pairs, so its difference from the paper's 0.31 is not established.
-- No harmful-prompt text is a refusal or carries an objection. DeepSeek's gap is all sandbagging: equal coherence,
-  shorter and worse texts. In Qwen 46% of the harmful-prompt texts were refusals or objections.
+- No harmful-prompt text is a refusal or contains an objection. DeepSeek's whole gap is sandbagging. Coherence is equal and the
+  harmful texts are shorter and lose. In Qwen 46% of the harmful-prompt texts were refusals or objections.
 
 ### 5.3 Vectors
 
@@ -474,8 +475,8 @@ E is max-effort minus neutral on grant items, S is harmful minus baseline on ess
 | 42 | 0.58, 0.85 | 0.64, 0.87 | -0.56 |
 | 54 | 0.47, 0.78 | 0.62, 0.84 | -0.47 |
 
-- Both vectors are reliable. The sandbagging direction points against the effort direction, weakly up to layer 20
-  and clearly from layer 24 on (-0.33 to -0.56). In Qwen the cosine was about zero for S, which is mostly a refusal vector, and -0.06 to -0.21 for the
+- Both vectors are reliable. The sandbagging direction points against the effort direction, with a cosine near -0.2 up to layer 20
+  and -0.33 to -0.56 from layer 24 on. In Qwen the cosine was about zero for S, which is mostly a refusal vector, and -0.06 to -0.21 for the
   vector built from clean texts (section 4.7).
 
 ### 5.4 Readout
@@ -539,7 +540,7 @@ layer 30 6 / 18 (words 366, 352, 354 against 373). There is no random-direction 
 - Half the dose at layer 30 gives the same result in separately generated essays: 8 / 28 (0.22) against the
   baseline (p = 0.010 against 1 / 41). The two layer-30 cells together win 14 / 51 (0.22, p = 0.004). At layers 12
   and 20 the half dose also changes nothing against the baseline.
-- The rescue is partial and did not grow with the dose. Against the baseline +0.05 and +0.1 give 0.22 and 0.21,
+- The gain from E is partial and did not grow with the dose. Against the baseline +0.05 and +0.1 give 0.22 and 0.21,
   while against the untouched harmful essay (0.79 and 0.97) and in length (22 and 30 of the 66 missing words) the
   larger dose does more. Doses above +0.1 were not run, and coherence shows no cost yet at +0.1.
 - Removing S under the harmful prompt helps against the untouched harmful essay (0.66 to 0.83) but not more than a
@@ -556,8 +557,8 @@ Limits of this section.
   (2 / 33 and 2 / 39 against 2 / 38).
 - Length predicts the panel's choice. In the resolved pairs of a steered harmful essay against the untouched
   harmful essay, the longer essay wins 264 of 304, and 20 of 23 in the random cell. The harmful essays are 66
-  words shorter than the baseline essays and E adds 22 to 30 words. Section 5.6 shows that the rescue goes
-  largely through length.
+  words shorter than the baseline essays and E adds 22 to 30 words. Section 5.6 shows that most of the gain from E
+  is explained by length.
 - The two layer-30 cells share their comparison essays (the same 60 untouched harmful and baseline essays).
   Against both runs of the untouched cell (3 / 81) the pooled 14 / 51 gives p = 0.001. The exact 95% interval
   of 14 / 51 is 0.12 to 0.33.
@@ -606,7 +607,7 @@ The effect of each group in a logistic regression, as log-odds, before and after
 - DeepSeek's sandbagging, as the panel sees it, is mostly shorter essays. At equal length the model predicts that
   a harmful-prompt essay wins 0.35 of pairs against the baseline (95% interval 0.24 to 0.47, all harmful-prompt
   cells), against 0.07 observed. So a gap remains at equal length, and it is much smaller.
-- The rescue by E at layer 30 goes largely through length. E makes the essays longer (the gap to the baseline
+- Length explains most of the gain from E at layer 30. E makes the essays longer (the gap to the baseline
   shrinks from 79 to 50 words). Once the word difference is in the model, the advantage over the random direction
   is gone (p = 0.64) and the advantage over the untouched harmful essay drops to +1.22 (p = 0.10). In the bins the
   layer-30 essays still win more often than others of similar length (8 / 33 against 2 / 23 for untouched in the
@@ -634,20 +635,21 @@ failed batch in memory). The three smoke-test attempts before it cost $54, of wh
 
 - Both models write worse texts under a harmful cause, as in the paper. Qwen also refuses or objects in 46% of the
   texts. DeepSeek never does.
-- In both models the harmful cause moves the text backward along the effort direction: by about half an
+- In both models the harmful cause moves the text backward along the effort direction, by about half an
   exhortation in Qwen and by a full one in DeepSeek.
-- The models differ in degree in how much effort carries the sandbagging. In Qwen the sandbagging vector built from clean texts points weakly
-  against effort (cosine -0.06 to -0.21; the vector S built from all texts is orthogonal to effort because it is
-  mostly a refusal vector, section 4.7) and adding effort does not close the gap (0.27 against 0.29 at layer 10, 0.28 against 0.18 at layers 16 to
+- The models differ in how much of the sandbagging the effort direction explains, and the difference is one of
+  degree. In Qwen the sandbagging vector built from clean texts has a small negative cosine with effort (-0.06 to
+  -0.21). The vector S built from all texts is orthogonal to effort because it is mostly a refusal vector (section
+  4.7). Adding effort does not close the gap (0.27 against 0.29 at layer 10, 0.28 against 0.18 at layers 16 to
   20, section 4.6). In DeepSeek the sandbagging vector points
   against effort (cosine -0.45 at layer 30) and adding effort at that layer partly closes the gap (0.22 and 0.21
   at the two doses against 0.02), without closing more at the higher dose.
 - The difference between the models is smaller than it looked. Qwen is now tested at layers 16 to 20 with a
-  control at each layer (section 4.6): E helps the harmful abstract a little more than a random direction and the
+  control at each layer (section 4.6). E helps the harmful abstract more than a random direction does, and the
   harmful abstract still wins only 0.28 against the baseline. DeepSeek's 0.22 at layer 30 is a similar number,
-  from a lower start (0.02). DeepSeek's effect appeared at one of three layers. The DeepSeek result has no random control at its own layer and may work
-  through essay length (section 5.5, limits).
-- In DeepSeek the sandbagging as judged, and the rescue, are mostly essay length (section 5.6). The panel picks the
+  from a lower start (0.02). DeepSeek's effect appeared at one of three layers. The DeepSeek result has no random control at its own layer and may be explained
+  by essay length (section 5.5, limits).
+- In DeepSeek both the judged sandbagging and the gain from E are mostly essay length (section 5.6). The panel picks the
   longer essay in 85 to 98% of pairs, and at equal length E at layer 30 no longer beats a random direction. In
   Qwen the harmful and baseline abstracts have the same length and the gap is not a length effect.
 - Not tested: doses above +0.1 and layers between 30 and 42 on DeepSeek, a random-direction control under the baseline prompt,
