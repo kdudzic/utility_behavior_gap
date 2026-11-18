@@ -297,7 +297,8 @@ Steering with S at layer 10, 60 pairs per cell. "S minus E" is S with its E comp
 | baseline, S added (r +0.1) | untouched baseline | 3 / 27 | 3 / 27 | 89.0 / 88.9 | 628 / 646 |
 | baseline, S minus E added | untouched baseline | 2 / 26 | 2 / 26 | 89.2 / 88.9 | 631 / 646 |
 
-- S is a reliable direction and it is not the effort direction. Its cosine with E is near zero, and projecting E out
+- S is a reliable direction and it is not the effort direction (but see 4.7: S is mostly a refusal vector, and the
+  vector built from clean texts only points weakly against E). Its cosine with E is near zero, and projecting E out
   changes nothing in any cell.
 - Adding S to the baseline prompt makes the abstracts lose (3 / 27, p < 0.001) with coherence unchanged and no
   refusals (0 of 60 texts open with a refusal phrase). So S carries a drop in quality and not only refusal text.
@@ -316,7 +317,7 @@ Steering with S at layer 10, 60 pairs per cell. "S minus E" is S with its E comp
 - The effort direction does not carry the sandbagging. Adding E under the harmful prompt at layer 10 leaves the
   gap to the baseline where it was (0.27 against 0.29, 164 and 196 clean pairs). At layers 16 to 20 (section 4.6)
   E makes the harmful abstract somewhat better than a random direction does (78 / 45 against 43 / 65), and the gap
-  to the baseline stays (0.28 against 0.18 untouched in that run, p = 0.12). A vector built from the harmful contrast is
+  to the baseline stays (0.28 against 0.18 untouched in that run, p = 0.12). A vector built from the harmful contrast (all texts, so mostly refusal, section 4.7) is
   orthogonal to E, lowers quality when added to the baseline prompt (3 / 27) and helps when removed under the
   harmful prompt (28 / 15 on all pairs, 10 / 3 on clean pairs).
 - So in this model and task, sandbagging and low effort are different directions. The harmful cause moves the text
@@ -375,6 +376,37 @@ The three layers pooled:
 - E is a weak push at these layers even without a harmful cause: under the baseline prompt it wins 0.61 at layer
   18 (p = 0.03) and 0.53 at layer 20 (p = 0.61). The max-effort prompt wins 0.83 on this task (4.1).
 - Layer 16 was also in the first run with 60 pairs (5 / 7 and 6 / 13 on clean pairs), in line with this run.
+
+### 4.7 The sandbagging vector S is mostly a refusal vector (2026-11-18)
+
+Script `local/week9_sandbag_clean.py`, table `outputs/steering/w9_analysis/sandbag_clean_vector.txt`. The 300
+harmful-prompt responses that S was built from were labelled with the paper's refusal classifier: 163 clean, 119
+with an objection, 13 full refusals, 5 degenerate. The vector was rebuilt from each part (minus the same 300
+baseline responses), from the stored per-response activations. "Shift along E" is the vector's component along E
+divided by the shift of the max-effort prompt (4.2).
+
+| layer | S, all 300: cosine with E | clean 163: cosine with E | clean: shift along E | clean: cosine with S | clean: size / S size | non-clean 137: cosine with S |
+|---|---|---|---|---|---|---|
+| 6 | +0.08 | -0.12 | -0.34 | 0.38 | 0.34 | 0.98 |
+| 10 | +0.10 | -0.14 | -0.53 | 0.29 | 0.36 | 0.98 |
+| 14 | +0.09 | -0.08 | -0.35 | 0.32 | 0.41 | 0.98 |
+| 16 | 0.00 | -0.13 | -0.50 | 0.33 | 0.39 | 0.98 |
+| 18 | -0.08 | -0.19 | -0.49 | 0.34 | 0.38 | 0.98 |
+| 20 | -0.09 | -0.21 | -0.53 | 0.37 | 0.34 | 0.98 |
+
+- S is the refusal and objection vector. Its cosine with the vector built from the 137 non-clean responses is
+  0.98, and with the vector built from the clean responses 0.24 to 0.42.
+- The clean-text sandbagging vector points weakly against E at every layer (cosine -0.06 to -0.21). Its component
+  along E is a third to a half of an exhortation backward, the same number as the readout of 4.2 on other texts.
+  The non-clean texts sit forward on E at layers 4 to 14, which is why the two cancelled in S.
+- So "S is orthogonal to E" (4.4) describes refusal, not the quality drop in clean abstracts. For clean abstracts
+  the honest statement is: the harmful cause moves them backward along E, and E is a small part of what changes
+  (at most 5% of the squared length of the clean vector; DeepSeek 20% at layer 30).
+- The clean vector is small (0.01 to 0.05 of the residual size) and less stable than S (split-half cosine 0.51 to
+  0.86), so its cosines are somewhat pulled toward zero by noise.
+- The steering cells of 4.4 used S. Adding S to the baseline prompt gave worse abstracts without refusal phrases
+  (3 / 27), so the refusal vector also lowers quality, but those cells do not test the clean-text vector. Steering
+  with the clean vector was not run.
 
 ## 5. DeepSeek V3.2, hosted white-box (note item 2)
 
@@ -443,7 +475,8 @@ E is max-effort minus neutral on grant items, S is harmful minus baseline on ess
 | 54 | 0.47, 0.78 | 0.62, 0.84 | -0.47 |
 
 - Both vectors are reliable. The sandbagging direction points against the effort direction, weakly up to layer 20
-  and clearly from layer 24 on (-0.33 to -0.56). In Qwen the cosine was about zero.
+  and clearly from layer 24 on (-0.33 to -0.56). In Qwen the cosine was about zero for S, which is mostly a refusal vector, and -0.06 to -0.21 for the
+  vector built from clean texts (section 4.7).
 
 ### 5.4 Readout
 
@@ -603,8 +636,9 @@ failed batch in memory). The three smoke-test attempts before it cost $54, of wh
   texts. DeepSeek never does.
 - In both models the harmful cause moves the text backward along the effort direction: by about half an
   exhortation in Qwen and by a full one in DeepSeek.
-- The models differ in whether effort carries the sandbagging. In Qwen the sandbagging vector is orthogonal to
-  effort and adding effort does not close the gap (0.27 against 0.29 at layer 10, 0.28 against 0.18 at layers 16 to
+- The models differ in degree in how much effort carries the sandbagging. In Qwen the sandbagging vector built from clean texts points weakly
+  against effort (cosine -0.06 to -0.21; the vector S built from all texts is orthogonal to effort because it is
+  mostly a refusal vector, section 4.7) and adding effort does not close the gap (0.27 against 0.29 at layer 10, 0.28 against 0.18 at layers 16 to
   20, section 4.6). In DeepSeek the sandbagging vector points
   against effort (cosine -0.45 at layer 30) and adding effort at that layer partly closes the gap (0.22 and 0.21
   at the two doses against 0.02), without closing more at the higher dose.

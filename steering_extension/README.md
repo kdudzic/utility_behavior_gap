@@ -223,6 +223,9 @@ admins on 2026-10-17 (security update, no ETA); the Phase 0-2 raw outputs still 
 - `local/week9_length.py`: offline; does text length explain the judged sandbagging results (the longer text wins,
   win rate by word difference, logistic regression with and without the word difference); reads the pair tables of
   `week9_sandbag.py`, writes `outputs/steering/w9_analysis/length_tables.txt`.
+- `local/week9_sandbag_clean.py`: labels the harmful extraction responses of `vectors/qwen3.5-9b_sandbag_v1` with the
+  refusal classifier (paid, about $0.07) and rebuilds the sandbagging vector from clean and from non-clean responses
+  (stored activations, no GPU); cosines with E and S per layer.
 - DeepSeek V3.2 (`deepseek-ai/DeepSeek-V3.2`, FP8 as released, 8 x 95 GiB GPUs): `steer/model.py` detects the model
   family, builds the thinking-off prompt and the FP8 load (`STEER_MAX_MEMORY_GIB`, default 86 in the chains);
   `STEER_ACTOR` and `STEER_MODEL_LABEL` set the labels in `local/common.py`. `vast/ds0_chain.sh` is the smoke test
