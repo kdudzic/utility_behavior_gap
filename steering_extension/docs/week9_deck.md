@@ -106,7 +106,8 @@ Essay task, 60 pairs per cell. Side a is the harmful prompt with a vector added 
 - E at layer 30, where the readout is strongest, beats the random control (29 / 1 against 14 / 9, p = 0.001) and lifts the win rate against the baseline from 0.02 to 0.21 (p = 0.016).
 - Half the dose at layer 30 gives the same result in separately generated essays (8 / 28, p = 0.010). Together the two cells win 14 / 51 (0.22, p = 0.004).
 - The rescue is partial and did not grow with the dose (0.22 and 0.21). The steered essay recovers 22 to 30 of the 66 missing words. Doses above +0.1 were not run. Layers 12 and 20 give no rescue at either dose.
-- Removing S does no better than the random direction (p 0.19 to 0.78; layer 12: 20 / 6 and 3 / 33).
+- Removing S does no better than the random direction (p 0.19 to 0.78).
+- Caveats: layers and doses were carried over from Qwen by relative depth (6, 10, 16 of 32) and not tuned on DeepSeek. The random control is at layer 20, there is none at layer 30. The longer essay wins 264 of 304 resolved steered vs untouched pairs, so the rescue may work through length.
 
 ## Answer to note item 2, open questions and cost
 
@@ -118,7 +119,7 @@ Essay task, 60 pairs per cell. Side a is the harmful prompt with a vector added 
 | cosine of the sandbagging vector with E | 0.00 to +0.10 | -0.45 at layer 30 |
 | harmful + E vs baseline (untouched harmful) | 0.27 (0.29) | 0.22 and 0.21 at two doses (0.02) |
 
-- Both models register the harmful cause as a move backward along the effort direction. Only in DeepSeek does that direction carry part of the sandbagging.
+- Both models register the harmful cause as a move backward along the effort direction. Only in DeepSeek does adding it back help. The difference between the models is not established: Qwen was tested with power at layer 10 only, and its readout is strongest at layers 18 to 20 (d -1.0 to -1.1), which were not steered.
 - Open: doses of E above +0.1 and layers 30 to 42 on DeepSeek. Doubling the dose from +0.05 to +0.1 did not close more of the gap. Can it be closed fully? A random control under the baseline prompt. DeepSeek steering on grant. Every DeepSeek steering cell has 23 to 42 resolved pairs.
 - Open: Qwen's sandbagging vector at other layers and doses, with larger clean-pair cells (now 8 to 16 resolved pairs).
 - Open: does the panel reward the overblown style that E adds, or win despite it?

@@ -416,6 +416,12 @@ direction. "ratio" is the harmful shift divided by the exhortation shift.
 
 ### 5.5 Steering
 
+How the cells were chosen. Layers 12, 20 and 30 of 61 are the relative depths of the Qwen layers 6, 10 and 16 of
+32. The doses are the ones that worked on Qwen. Neither was tuned on DeepSeek: the grid was fixed before the
+vectors existed, because the chain ran unattended, and the calibration step of the plan (three doses on ten texts)
+was skipped. The only check on this model was the smoke test, where a random vector at layer 30 changed the wording
+at 0.5 of the residual norm and degraded the text at 2.
+
 Essay task, 60 pairs per cell, dose as a fraction of the layer's RMS residual norm. Coherence is 90.9 to 92.2 in
 every cell and 719 of 720 steered harmful texts are clean, so no cell is damaged.
 
@@ -456,6 +462,21 @@ layer 30 6 / 18 (words 366, 352, 354 against 373). There is no random-direction 
 - A random direction added under the harmful prompt wins 14 / 9 against the untouched harmful essay, so 0.61 and
   not 0.50 is the level to compare the steered cells with.
 
+Limits of this section.
+
+- The random control is at layer 20. There is none at layer 30, so the layer-30 result is compared with a random
+  direction from another layer. At layer 20, where the control is, E does not beat it against the baseline
+  (2 / 33 and 2 / 39 against 2 / 38).
+- Length predicts the panel's choice. In the resolved pairs of a steered harmful essay against the untouched
+  harmful essay, the longer essay wins 264 of 304, and 20 of 23 in the random cell. The harmful essays are 66
+  words shorter than the baseline essays and E adds 22 to 30 words. The rescue may therefore work through
+  length. Whether that is the mechanism of the sandbagging or a preference of the judges was not separated.
+- The two layer-30 cells share their comparison essays (the same 60 untouched harmful and baseline essays).
+  Against both runs of the untouched cell (3 / 81) the pooled 14 / 51 gives p = 0.001. The exact 95% interval
+  of 14 / 51 is 0.12 to 0.33.
+- Three layers and two doses were tried and none was tuned, so layer 30 is where an effect was found and not
+  where it is largest. The readout is as strong at layer 42.
+
 ### 5.6 Cost
 
 OpenRouter, from the usage recorded with every call: $26.04 for the whole week. Panel judging $20.08 (Qwen $14.45
@@ -476,5 +497,9 @@ failed batch in memory). The three smoke-test attempts before it cost $54, of wh
   effort and adding effort does not close the gap (0.27 against 0.29). In DeepSeek the sandbagging vector points
   against effort (cosine -0.45 at layer 30) and adding effort at that layer partly closes the gap (0.22 and 0.21
   at the two doses against 0.02), without closing more at the higher dose.
+- The difference between the models is not established. Qwen was tested with enough pairs at layer 10 only, while
+  its clean-text readout is strongest at layers 18 to 20 (d -1.08 and -0.98), which were not steered. DeepSeek's
+  effect appeared at one of three layers. The DeepSeek result has no random control at its own layer and may work
+  through essay length (section 5.5, limits).
 - Not tested: doses above +0.1 and layers between 30 and 42 on DeepSeek, a random-direction control under the baseline prompt,
   DeepSeek steering on grant, and larger cells (every DeepSeek steering cell has 60 pairs and 23 to 42 resolved).
