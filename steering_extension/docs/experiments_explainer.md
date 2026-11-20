@@ -1,6 +1,6 @@
 # Every steering experiment so far, in order
 
-Last updated 2026-11-20 (week 10). One entry per experiment: what was done, with
+Last updated 2026-11-21 (week 10). One entry per experiment: what was done, with
 what values, on what, and what came out. Detailed tables live in the per-week documents linked in each entry.
 Numbers are win rates of the steered (or ablated) side with wins / losses in brackets, panel ties excluded.
 
@@ -116,8 +116,11 @@ Sandbagging is the paper's comparison of the harmful-cause prompt (side a) with 
 | 9.2 | foreign-script words in all generated texts (offline) | every distinct text of every run; CJK, Cyrillic, other scripts, replacement character | about one Qwen text in ten (unsteered essay 7.6%, grant 10.2%); E added 11% to 15% by dose, random 8% to 9%; DeepSeek 1 of 1,320; they explain about half of the coherence judge's "broken tokens", the rest is garbled English |
 | 9.3 | the paper's generation settings through OpenRouter | paper's `run_generation.py`, temperature 1.0, reasoning none, provider defaults, neutral prompt, 300 essays + 300 grant abstracts; $0.10 | foreign words in 5.3% (essay) and 7.3% (grant), against 7.9% and 10.7% locally (p = 0.13, 0.09): the paper's texts most likely have them too |
 | 9.4 | token probabilities of 1,320 unsteered texts (A100) | `steer/token_probs.py`: probability, rank and nucleus position of every token at temperature 1.0 | foreign tokens are tail draws (median probability 0.00008, 63% outside the top 20 locally, 85% in OpenRouter texts); about 1% of all tokens lie outside the top 20 in both sources, so OpenRouter does not cut the tail either |
+| 9.5 | second rubric coder | the paper's coder prompt and code with claude-haiku-4.5, same 540 pairs (4 essay cells of 7.3, 5 grant cells of 9.1); $2.88 | haiku names one winner on all grant markers in 20% of pairs (gemini 51%); agrees with gemini on 67% (essay) and 73% (grant) of decided markers; sees E raise essay framing (+0.35 to +0.37, gemini +0.08 to +0.10) and E essays overclaim (-0.43 to -0.53): week 8's "content but not framing" depends on the coder; both coders: E improves grant abstracts |
+| 9.6 | blind reading of 20 grant pairs | separate Claude agent, coder verdicts hidden, the seven grant marker definitions; 12 pairs gemini rated all-same, 8 mixed | no pair with one winner on all seven markers, 45% ties, 58% agreement with gemini where both decide: gemini's grant codes are mostly an overall verdict |
+| 9.7 | sampling with the tail cut | run `w10_tail95`: week-6/7 essay cells (E at layers 6, 14, +0.05 and +0.1; random at layers 6, 14, +0.1; unsteered) regenerated with top-p 0.95, same prompts, vectors, items, repeats; judged and coherence-scored; $1.91 + GPU | damaged share falls by about two thirds in every group (E 30% to 10%, random 20% to 8%, unsteered 28% to 12%); with the cut E damages no more than random or unsteered (p = 0.70, 0.64); E wins 0.85 (full 0.71) against random 0.46; more panel ties (75% against 60%) |
 
-## 6. Standing answers to the hypotheses (after week 7; week 8 adds: the win-rate effects are not coherence effects, see 7.1 and 7.2; the paper's rubric markers move the same way for the vector as for the prompt on content, not on framing, see 7.3; the role cue rides on E, see 7.4; the one reliable role vector, world-class vs novice, steers only downward and only toward plain prose, see 7.7)
+## 6. Standing answers to the hypotheses (week 10 adds: the coherence cost of adding E is mostly tail sampling, see 9.7; marker-level rubric profiles depend on the coder, see 9.5; after week 7; week 8 adds: the win-rate effects are not coherence effects, see 7.1 and 7.2; the paper's rubric markers move the same way for the vector as for the prompt on content, not on framing, see 7.3; the role cue rides on E, see 7.4; the one reliable role vector, world-class vs novice, steers only downward and only toward plain prose, see 7.7)
 
 - H2, removing the direction cancels the effect: supported. Full dose curve at 12 layers (week 6); against
   matched random controls the effort-specific removal is clear at layers 10 to 16 and on grant at all layers

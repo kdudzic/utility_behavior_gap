@@ -16,6 +16,7 @@ Outputs in --out:
 Paid API call: run only with the PI's authorization. --dry-run builds the sample and prints the first prompt, no calls.
 Run: .venv/bin/python -m steering_extension.local.rubric_judge --out outputs/steering/w8_rubric --workers 8
      .venv/bin/python -m steering_extension.local.rubric_judge --cells w10 --out outputs/steering/w10_rubric --workers 8
+     .venv/bin/python -m steering_extension.local.rubric_judge --cells w10x --coder anthropic/claude-haiku-4.5 --out outputs/steering/w10_rubric_haiku
 """
 from __future__ import annotations
 
@@ -67,7 +68,9 @@ CELLS_W10 = [
     ("w7_crossval_grant", "steer_E_L16_r+0.050_response", "n. grant: add essay-built E, layer 16, +0.05 vs unsteered"),
     ("w7_crossval_grant", "steer_rand0_L10_r+0.050_response", "o. grant: random direction 0, layer 10, +0.05 vs unsteered"),
 ]
-CELL_SETS = {"w8": CELLS, "w10": CELLS_W10}
+# Week 10 second-coder check: the four essay cells of the week-10 comparison plus the five grant cells.
+CELLS_W10X = [c for c in CELLS if c[2][:2] in ("a.", "b.", "c.") or c[2].startswith("g1.")] + CELLS_W10
+CELL_SETS = {"w8": CELLS, "w10": CELLS_W10, "w10x": CELLS_W10X}
 
 
 def load_jsonl(p: Path) -> list[dict]:
@@ -141,7 +144,8 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None, help="code only the first N pairs (smoke test)")
     ap.add_argument("--dry-run", action="store_true", help="build the sample, print the first prompt, no API calls")
     ap.add_argument("--summarize-only", action="store_true")
-    ap.add_argument("--cells", choices=sorted(CELL_SETS), default="w8", help="cell set: w8 (week 8) or w10 (grant cells, week 10)")
+    ap.add_argument("--cells", choices=sorted(CELL_SETS), default="w8", help="cell set: w8 (week 8), w10 (grant cells, week 10), w10x (four essay + five grant cells)")
+    ap.add_argument("--coder", default=DEFAULT_CODER_MODEL, help="coder model (default: the paper's, %(default)s)")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     sample = build_sample(args.seed, CELL_SETS[args.cells])
@@ -161,7 +165,7 @@ def main() -> None:
         print(f"coding {len(todo)} pairs ({len(done)} already done)")
         cost = 0.0
         with ThreadPoolExecutor(max_workers=args.workers) as ex, codes_path.open("a") as f:
-            futs = {ex.submit(code_sample_row, row_dict=r, coder_model=DEFAULT_CODER_MODEL, temperature=DEFAULT_TEMPERATURE, max_tokens=DEFAULT_MAX_TOKENS, timeout_s=120.0): r for r in todo}
+            futs = {ex.submit(code_sample_row, row_dict=r, coder_model=args.coder, temperature=DEFAULT_TEMPERATURE, max_tokens=DEFAULT_MAX_TOKENS, timeout_s=120.0): r for r in todo}
             for i, fut in enumerate(as_completed(futs), 1):
                 rec = fut.result()
                 r = futs[fut]

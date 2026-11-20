@@ -94,6 +94,11 @@ def load_vector(path: str, key: str, layer: int | None, device) -> torch.Tensor:
     return _vector_cache[ck]
 
 
+# Nucleus cut for sampling. 1.0 (no cut, top_k 0) is the protocol of every run up to week 10; the week-10 tail
+# check sets 0.95 with --top-p or STEER_TOP_P. Recorded in every generation row under provider.top_p.
+TOP_P = float(os.environ.get("STEER_TOP_P", "1.0"))
+
+
 @torch.inference_mode()
 def generate_batch(loaded: LoadedModel, batch: list[dict], *, temperature: float, max_tokens: int, hook, layer_idx) -> list[dict]:
     tok = loaded.tokenizer
@@ -105,7 +110,7 @@ def generate_batch(loaded: LoadedModel, batch: list[dict], *, temperature: float
             **enc,
             do_sample=temperature > 0,
             temperature=temperature if temperature > 0 else None,
-            top_p=1.0,
+            top_p=TOP_P,
             top_k=0,
             max_new_tokens=max_tokens,
             pad_token_id=tok.pad_token_id,
@@ -162,7 +167,7 @@ def success_row(req: dict, gen: dict, *, model_name: str, temperature: float, la
         "temperature": temperature,
         "max_tokens": max_tokens,
         "reasoning": {"effort": "none", "backend": "hf_transformers", "enable_thinking": False},
-        "provider": {"backend": "hf_transformers", "device": "cuda", "steering": req.get("steering")},
+        "provider": {"backend": "hf_transformers", "device": "cuda", "steering": req.get("steering"), "top_p": TOP_P},
         "finish_reason": gen["finish_reason"],
         "usage": {"prompt_tokens": gen["prompt_tokens"], "completion_tokens": gen["completion_tokens"]},
         "run_id": req.get("run_id", ""),
@@ -195,12 +200,16 @@ def main() -> None:
     ap.add_argument("--manifest", type=Path)
     ap.add_argument("--model", default=os.environ.get("STEER_MODEL", "Qwen/Qwen3.5-9B"))
     ap.add_argument("--temperature", type=float, default=1.0)
+    ap.add_argument("--top-p", type=float, default=None, help="nucleus cut (default 1.0 = no cut, or STEER_TOP_P)")
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--num-shards", type=int, default=1)
     ap.add_argument("--merge", type=Path, default=None, help="Run dir: merge shard files and exit.")
     ap.add_argument("--limit", type=int, default=None)
     args = ap.parse_args()
+    if args.top_p is not None:
+        global TOP_P
+        TOP_P = args.top_p
     if args.merge:
         merge(args.merge)
         return
