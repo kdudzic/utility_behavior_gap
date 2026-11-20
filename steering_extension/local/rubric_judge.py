@@ -15,6 +15,7 @@ Outputs in --out:
   rubric_summary.md    the same as tables
 Paid API call: run only with the PI's authorization. --dry-run builds the sample and prints the first prompt, no calls.
 Run: .venv/bin/python -m steering_extension.local.rubric_judge --out outputs/steering/w8_rubric --workers 8
+     .venv/bin/python -m steering_extension.local.rubric_judge --cells w10 --out outputs/steering/w10_rubric --workers 8
 """
 from __future__ import annotations
 
@@ -58,16 +59,25 @@ CELLS = [
     ("w7_role", "steer_E_L6_r+0.100_skilled_vs_skilled", "i. add E, layer 6, +0.1 under skilled vs untouched skilled"),
     ("w7_crossval_grant", "steer_E_L16_r-0.100_response", "j. grant: remove essay-built E, layer 16, -0.1 vs unsteered"),
 ]
+# Week 10 (2026-11-20, 18.11 todo item 1): grant cells for the essay vs grant comparison on shared markers.
+CELLS_W10 = [
+    ("w9_sandbag_local", "effort_vs_neutral", "k. grant: max-effort prompt vs neutral prompt, untouched"),
+    ("w7_crossval_grant", "steer_E_L6_r+0.050_response", "l. grant: add essay-built E, layer 6, +0.05 vs unsteered"),
+    ("w7_crossval_grant", "steer_E_L10_r+0.050_response", "m. grant: add essay-built E, layer 10, +0.05 vs unsteered"),
+    ("w7_crossval_grant", "steer_E_L16_r+0.050_response", "n. grant: add essay-built E, layer 16, +0.05 vs unsteered"),
+    ("w7_crossval_grant", "steer_rand0_L10_r+0.050_response", "o. grant: random direction 0, layer 10, +0.05 vs unsteered"),
+]
+CELL_SETS = {"w8": CELLS, "w10": CELLS_W10}
 
 
 def load_jsonl(p: Path) -> list[dict]:
     return [json.loads(l) for l in p.open()]
 
 
-def build_sample(seed: int) -> pd.DataFrame:
+def build_sample(seed: int, cells: list[tuple[str, str, str]] = CELLS) -> pd.DataFrame:
     rng = random.Random(seed)
     rows = []
-    for run, cell, label in CELLS:
+    for run, cell, label in cells:
         rd = RUNS / run
         jobs = [j for j in load_jsonl(rd / "generation_jobs.jsonl") if j.get("cell", j["comparison"]) == cell]
         gens = {g["output_id"]: g for g in load_jsonl(rd / "generations.jsonl")}
@@ -131,9 +141,10 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None, help="code only the first N pairs (smoke test)")
     ap.add_argument("--dry-run", action="store_true", help="build the sample, print the first prompt, no API calls")
     ap.add_argument("--summarize-only", action="store_true")
+    ap.add_argument("--cells", choices=sorted(CELL_SETS), default="w8", help="cell set: w8 (week 8) or w10 (grant cells, week 10)")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    sample = build_sample(args.seed)
+    sample = build_sample(args.seed, CELL_SETS[args.cells])
     sample.drop(columns=["output_a", "output_b", "task_context"]).to_csv(args.out / "rubric_sample.csv", index=False)
     print(f"sample: {len(sample)} pairs over {sample.cell.nunique()} cells")
     codes_path = args.out / "rubric_codes.jsonl"

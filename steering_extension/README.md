@@ -235,3 +235,19 @@ admins on 2026-10-17 (security update, no ETA); the Phase 0-2 raw outputs still 
   A chain run costs about $21 per hour plus a download fee of $8 to $24 depending on the host.
 - Both chains stop the instance themselves after a grace period; `touch outputs/steering/logs/<name>.pulled` on the
   instance after `vast pull` ends the wait. A stopped instance still bills its disk: `vast down --yes` afterwards.
+
+## Week 10 additions (2026-11-20)
+
+- `docs/week10_results.md`: the week-10 report (plan in `1811_todo.txt`): the paper's rubric coder on grant and
+  essay on four shared markers, and the foreign-script "broken tokens" in unsteered texts. Deck `docs/week10_deck.md`.
+- `local/rubric_judge.py --cells w10 --out outputs/steering/w10_rubric`: the grant cell set (paid, about $0.67).
+- `local/week10_tokens.py`: offline scan of every generated text for words in another script, by model, task,
+  steering and dose, the OpenRouter against local comparison, and a check of the coherence judge's quotes; writes
+  `outputs/steering/w10_analysis/tokens_tables.txt`.
+- Runs `w10_or_essay`, `w10_or_grant`: the paper's `run_generation.py` through OpenRouter at temperature 1.0 with
+  provider defaults, neutral prompt, 300 texts each (`--jobs <run>/generation_jobs.jsonl --temperature 1.0
+  --max-tokens 900|1400 --compact-log`; paid, about $0.10).
+- `steer/token_probs.py`: per-token probability, rank and nucleus position under Qwen at temperature 1.0 for the
+  texts of given run dirs; `vast/w10_chain.sh` runs it on the instance over `outputs/steering/w10_token_inputs/*`
+  (filtered copies of unsteered texts, synced by hand with rsync because `vast push` uploads 5.5 GB of vectors).
+

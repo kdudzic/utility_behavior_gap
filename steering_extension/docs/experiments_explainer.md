@@ -1,6 +1,6 @@
 # Every steering experiment so far, in order
 
-Last updated 2026-11-18 (week 9). One entry per experiment: what was done, with
+Last updated 2026-11-20 (week 10). One entry per experiment: what was done, with
 what values, on what, and what came out. Detailed tables live in the per-week documents linked in each entry.
 Numbers are win rates of the steered (or ablated) side with wins / losses in brackets, panel ties excluded.
 
@@ -107,6 +107,15 @@ Sandbagging is the paper's comparison of the harmful-cause prompt (side a) with 
 | 8.11 | Length reanalysis (offline) | judged pairs of 8.5 to 8.10; the longer text wins, win rate by word difference, logistic regression with and without the word difference | DeepSeek essay: the longer essay wins 85 to 98% of resolved pairs; at equal length E at layer 30 no longer beats the random direction (p = 0.64) and the harmful essay is predicted to win 0.35 vs baseline (observed 0.07); Qwen grant: length matters less (60 to 74%), the gap is not a length effect (0.21 predicted, 0.25 observed) |
 | 8.12 | Qwen: E under the harmful prompt at layers 16, 18, 20 | grant, 240 pairs per cell, repeats 10 to 17, r +0.05, a random control at each layer, clean pairs (1,927 judged); E under the baseline prompt at layers 18, 20 | untouched harmful vs baseline 14/62; E vs untouched harmful 78/45, random 43/65 (p < 0.001, holds at equal length); E vs baseline 55/140 (0.28), random 30/176 (0.15), untouched 0.18 (E vs untouched p = 0.12); gap not closed; E under baseline 65/41 at layer 18, 51/45 at layer 20 |
 | 8.13 | Qwen sandbagging vector from clean texts only (offline) | the 300 harmful extraction responses of S labelled by the refusal classifier (163 clean); vector rebuilt per subset from stored activations | S is the refusal vector (cosine 0.98 with the non-clean vector, 0.24 to 0.42 with the clean one); the clean vector points weakly against E (cosine -0.06 to -0.21, a third to a half of an exhortation); steering with the clean vector not run |
+
+## 9. Week 10 (2026-11-20): rubric coder on essay and grant, broken tokens in unsteered texts, `week10_results.md`
+
+| # | experiment | values | result |
+| --- | --- | --- | --- |
+| 9.1 | paper's rubric coder on grant, compared with essay on four shared markers | gemini-2.5-flash, code unchanged, 5 grant cells x 60 pairs (max-effort vs neutral prompt; E +0.05 at layers 6, 10, 16; random +0.05 at layer 10), essay cells from 7.3; markers paired: thesis framing / problem significance, concrete example / intervention specificity, counterargument / risk mitigation, plausibility / measurable impact; $0.67 | on grant E raises all four, framing included (+0.22 to +0.38; prompt +0.55), unlike essays (framing +0.08 to +0.10); random +0.03 to +0.15; but on grant the coder names the same winner on all seven markers in 51% of pairs (essay 6%), so the grant profile is mostly overall quality |
+| 9.2 | foreign-script words in all generated texts (offline) | every distinct text of every run; CJK, Cyrillic, other scripts, replacement character | about one Qwen text in ten (unsteered essay 7.6%, grant 10.2%); E added 11% to 15% by dose, random 8% to 9%; DeepSeek 1 of 1,320; they explain about half of the coherence judge's "broken tokens", the rest is garbled English |
+| 9.3 | the paper's generation settings through OpenRouter | paper's `run_generation.py`, temperature 1.0, reasoning none, provider defaults, neutral prompt, 300 essays + 300 grant abstracts; $0.10 | foreign words in 5.3% (essay) and 7.3% (grant), against 7.9% and 10.7% locally (p = 0.13, 0.09): the paper's texts most likely have them too |
+| 9.4 | token probabilities of 1,320 unsteered texts (A100) | `steer/token_probs.py`: probability, rank and nucleus position of every token at temperature 1.0 | foreign tokens are tail draws (median probability 0.00008, 63% outside the top 20 locally, 85% in OpenRouter texts); about 1% of all tokens lie outside the top 20 in both sources, so OpenRouter does not cut the tail either |
 
 ## 6. Standing answers to the hypotheses (after week 7; week 8 adds: the win-rate effects are not coherence effects, see 7.1 and 7.2; the paper's rubric markers move the same way for the vector as for the prompt on content, not on framing, see 7.3; the role cue rides on E, see 7.4; the one reliable role vector, world-class vs novice, steers only downward and only toward plain prose, see 7.7)
 
